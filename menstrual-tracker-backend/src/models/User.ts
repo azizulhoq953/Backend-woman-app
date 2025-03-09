@@ -71,7 +71,7 @@ const UserSchema: Schema = new Schema(
 
     role: { type: String, default: "user" },
     resetOtp: { type: String }, // Store OTP here
-  otpExpire: { type: Date }, // Store OTP expiry date here
+    otpExpire: { type: Date }, // Store OTP expiry date here
   },
   { timestamps: true }
 );

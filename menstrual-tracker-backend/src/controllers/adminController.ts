@@ -7,6 +7,9 @@ import Product from "../models/Product";
 import Admin from "../models/admin.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import path from "path";
+import multer from "multer";
+const uploadProductImages = multer({ dest: 'uploads/' });
 // Hash password using bcrypt
 
 export const getUsers = async (req: Request, res: Response) => {
@@ -25,48 +28,109 @@ export const getOrders = async (req: Request, res: Response) => {
 };
 
 
+// export const createCategory = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//       const { name } = req.body;
+
+//       if (!name) {
+//           res.status(400).json({ error: "Category name is required" });
+//           return; // Stop further execution
+//       }
+
+//       const existingCategory = await Category.findOne({ name });
+
+//       if (existingCategory) {
+//           res.status(400).json({ error: "Category already exists" });
+//           return;
+//       }
+
+//       const category = new Category({ name });
+//       await category.save();
+
+//       res.status(201).json({ message: "Category created successfully", category });
+//   } catch (error) {
+//       res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+
+// Create Category
 export const createCategory = async (req: Request, res: Response): Promise<void> => {
   try {
-      const { name } = req.body;
+    const { name } = req.body;
 
-      if (!name) {
-          res.status(400).json({ error: "Category name is required" });
-          return; // Stop further execution
-      }
+    if (!name) {
+      res.status(400).json({ error: "Category name is required" });
+      return; // Stop further execution
+    }
 
-      const existingCategory = await Category.findOne({ name });
+    const existingCategory = await Category.findOne({ name });
 
-      if (existingCategory) {
-          res.status(400).json({ error: "Category already exists" });
-          return;
-      }
+    if (existingCategory) {
+      res.status(400).json({ error: "Category already exists" });
+      return;
+    }
 
-      const category = new Category({ name });
-      await category.save();
+    const category = new Category({ name });
+    await category.save();
 
-      res.status(201).json({ message: "Category created successfully", category });
+    res.status(201).json({ message: "Category created successfully", category });
   } catch (error) {
-      res.status(500).json({ error: "Server error" });
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
-
-export const addProduct = async (req: Request, res: Response) => {
-  try {
-      const { name, category, description, price, images } = req.body;
-      if (!name || !category || !description || !price || !images.length) {
-          return res.status(400).json({ error: "All fields are required" });
-      }
+// export const addProduct = async (req: Request, res: Response) => {
+//   try {
+//       const { name, category, description, price, images } = req.body;
+//       if (!name || !category || !description || !price || !images.length) {
+//           return res.status(400).json({ error: "All fields are required" });
+//       }
       
-      const product = new Product({ name, category, description, price, images });
-      await product.save();
-      res.status(201).json({ message: "Product added successfully", product });
+//       const product = new Product({ name, category, description, price, images });
+//       await product.save();
+//       res.status(201).json({ message: "Product added successfully", product });
+//   } catch (error) {
+//       res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+
+// Add Product
+export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, category, description, price } = req.body;
+    const images = req.files as Express.Multer.File[];
+
+    // Validate all fields are provided
+    if (!name || !category || !description || !price || !images || images.length === 0) {
+       res.status(400).json({ error: "All fields are required" });
+       return
+    }
+
+    // Process images to get their URLs
+    const imageUrls = images.map(image => path.join('uploads', image.filename));
+
+    // Create new product
+    const product = new Product({
+      name,
+      category,
+      description,
+      price,
+      images: imageUrls,
+    });
+
+    await product.save(); // Save the product to the database
+
+    res.status(201).json({ message: "Product added successfully", product });
   } catch (error) {
-      res.status(500).json({ error: "Server error" });
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
-//admin create
+
 
 export const createAdmin = async (req: Request, res: Response): Promise<void> => {
   try {

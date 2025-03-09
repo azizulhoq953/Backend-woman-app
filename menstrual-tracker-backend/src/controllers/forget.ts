@@ -106,6 +106,9 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
   try {
     const { email, newPassword, confirmPassword } = req.body;
 
+    // Log incoming request data
+    console.log('Request Body:', req.body);
+
     if (!newPassword || !confirmPassword) {
       res.status(400).json({ error: "New password and confirm password are required" });
       return;
@@ -123,14 +126,28 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Log user found
+    console.log('User found:', user);
+
     // Hash the new password
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    let hashedPassword;
+    try {
+      hashedPassword = await bcrypt.hash(newPassword, 12);
+      console.log('Password hashed successfully:', hashedPassword);
+    } catch (err) {
+      console.error('Error hashing password:', err);
+      res.status(500).json({ error: "Error hashing password" });
+      return;
+    }
 
     // Update the user's password
     user.password = hashedPassword;
     user.resetOtp = undefined; // Clear OTP field
     user.otpExpire = undefined; // Clear OTP expiry field
+    
+    // Save the updated user
     await user.save();
+    console.log('User saved:', user);
 
     res.json({ message: "Password updated successfully" });
   } catch (err) {
@@ -138,3 +155,4 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: "Server error" });
   }
 };
+
