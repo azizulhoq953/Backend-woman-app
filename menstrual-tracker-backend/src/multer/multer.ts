@@ -89,6 +89,7 @@ const uploadProductImages = multer({
   { name: 'profileImage', maxCount: 1 }, // Profile image field (optional)
   { name: 'productImages', maxCount: 10 }, // Product images field (can accept multiple images)
   { name: 'PostImage', maxCount: 10 }, // Post images field (can accept multiple images)
+  { name: 'image', maxCount: 10 }, // Post images field (can accept multiple images)
 ]);
 
 export default uploadProductImages;

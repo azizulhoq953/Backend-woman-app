@@ -21,11 +21,12 @@ import { forgetPassword, resetPassword, verifyOtp } from "../controllers/forget"
 import uploadImages from "../multer/multer";
 import { createMenstrualHealth, updateMenstrualHealth } from "../controllers/question.controller";
 import { getNotifications } from "../controllers/notification";
+import { addCounselor, deleteCounselor, getAllCounselors, getCounselorById, updateCounselor, updateCounselorPassword } from "../controllers/counseller";
 // import { createPost, getPostsByCategory } from "../controllers/postController";
 // import { addToCart, placeOrder } from "../controllers/orderController";
 
 const router = express.Router();
-
+const upload = multer({ dest: "uploads/" });
 // Auth Routes
 router.post("/register", register);
 router.post("/login", login);
@@ -83,5 +84,16 @@ router.get("/partner/:partnerId", getUserByPartnerId); // ✅ Get User by Partne
 router.get("/partner/profile/:userId", getPartnerProfile); 
 
 // router.post("/admin/product", authMiddleware, adminMiddleware, addProduct);
+//counseller
+
+
+// Routes
+router.post("/admin/add", upload.single("image"), authenticateAdmin,addCounselor); // Admin adds counselor
+router.get("/all", getAllCounselors); // Get all counselors
+router.get("/:id", getCounselorById); // Get counselor by ID
+router.delete("/:id", deleteCounselor); // Admin deletes counselor
+router.put("/update",authMiddleware, updateCounselor); // Admin deletes counselor
+router.put("/password", updateCounselorPassword); // Admin deletes counselor
+
 
 export default router;
