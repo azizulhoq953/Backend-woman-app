@@ -81,23 +81,6 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// export const addProduct = async (req: Request, res: Response) => {
-//   try {
-//       const { name, category, description, price, images } = req.body;
-//       if (!name || !category || !description || !price || !images.length) {
-//           return res.status(400).json({ error: "All fields are required" });
-//       }
-      
-//       const product = new Product({ name, category, description, price, images });
-//       await product.save();
-//       res.status(201).json({ message: "Product added successfully", product });
-//   } catch (error) {
-//       res.status(500).json({ error: "Server error" });
-//   }
-// };
-
-
-// Add Product
 export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, category, description, price } = req.body;
@@ -165,6 +148,7 @@ export const createAdmin = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+
 export const loginAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
       const { email, password } = req.body;
@@ -197,5 +181,132 @@ export const loginAdmin = async (req: Request, res: Response): Promise<void> => 
       res.json({ token });
   } catch (err) {
       res.status(500).json({ error: "Server error" });
+  }
+};
+
+export const getAdminProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized access" });
+      return;
+    }
+
+    const admin = await Admin.findById(req.user.id).select("-password"); // Exclude password
+
+    if (!admin) {
+      res.status(404).json({ error: "Admin not found" });
+      return;
+    }
+
+    res.status(200).json({ admin });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+
+
+
+export const changeAdminPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized access" });
+      return;
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      res.status(400).json({ error: "All fields are required" });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      res.status(400).json({ error: "New password and confirm password do not match" });
+      return;
+    }
+
+    const admin = await Admin.findById(req.user.id);
+
+    if (!admin) {
+      res.status(404).json({ error: "Admin not found" });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+
+    if (!isMatch) {
+      res.status(400).json({ error: "Current password is incorrect" });
+      return;
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    admin.password = hashedPassword;
+    await admin.save();
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+export const getAllCategories = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const categories = await Category.find();
+    res.status(200).json({ categories });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+export const getCategoryById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const category = await Category.findById(id);
+
+    if (!category) {
+      res.status(404).json({ error: "Category not found" });
+      return;
+    }
+
+    res.status(200).json({ category });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+export const getAllProducts = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const products = await Product.find().populate("category"); // Populate category details
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+export const getProductById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findById(id).populate("category");
+
+    if (!product) {
+      res.status(404).json({ error: "Product not found" });
+      return;
+    }
+
+    res.status(200).json({ product });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
   }
 };

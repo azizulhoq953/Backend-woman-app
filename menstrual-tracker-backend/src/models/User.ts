@@ -29,11 +29,12 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId;
   name: string;
   email: string;
   password: string;
-  menstrualLastDay?: Date;
-  expectedNextDate?: Date;
+  // menstrualLastDay?: Date;
+  // expectedNextDate?: Date;
   partnerId?: string;
   resetOtp?: string;
   otpExpire?: Number;
@@ -64,8 +65,8 @@ const UserSchema: Schema = new Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    menstrualLastDay: { type: Date },
-    expectedNextDate: { type: Date },
+    // menstrualLastDay: { type: Date },
+    // expectedNextDate: { type: Date },
     partnerId: { type: String, unique: true, default: () => Math.random().toString(36).substr(2, 7) }, // ✅ Unique 7-char ID
     profileImageUrl:{type: String},
 

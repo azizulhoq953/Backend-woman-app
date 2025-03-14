@@ -1,6 +1,7 @@
 import { Request, response, Response } from "express";
 import Post from "../models/Post";
 import { request } from "http";
+import { Types } from "mongoose"; // Import Types for ObjectId
 
 // Extend Request type to include `user`
 interface AuthenticatedRequest extends Request {
@@ -8,10 +9,11 @@ interface AuthenticatedRequest extends Request {
 }
 
 
-// Create Post
-// export const createPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+
+
+// export const createPost = async (req: Request, res: Response): Promise<void> => {
 //     try {
-//         const { title, category, description, image } = req.body;
+//         const { title, category, description } = req.body;
 
 //         if (!title || !category || !description) {
 //             res.status(400).json({ error: "All fields are required" });
@@ -23,21 +25,28 @@ interface AuthenticatedRequest extends Request {
 //             return;
 //         }
 
+//         // Extract image paths
+//         const images = req.files ? (req.files as Express.Multer.File[]).map(file => file.path) : [];
+
+//         // Create post
 //         const post = new Post({
 //             userId: req.user.id,
 //             title,
 //             category,
 //             description,
-//             image,
+//             images, // Store multiple image paths
 //         });
 
 //         await post.save();
-//         res.status(201).json({ message: "Post created successfully", post });
+
+//         // Fetch the post with populated category details
+//         const populatedPost = await Post.findById(post._id).populate("category");
+
+//         res.status(201).json({ message: "Post created successfully", post: populatedPost });
 //     } catch (error) {
-//         res.status(500).json({ error: "Server error" });
+//         res.status(500).json({ error: "Server error", details: (error as Error).message });
 //     }
 // };
-
 export const createPost = async (req: Request, res: Response): Promise<void> => {
     try {
         const { title, category, description } = req.body;
@@ -53,15 +62,17 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
         }
 
         // Extract image paths
-        const images = req.files ? (req.files as Express.Multer.File[]).map(file => file.path) : [];
+        const image = req.file ? req.file.path : "";
 
         // Create post
         const post = new Post({
-            userId: req.user.id,
+            userId: new Types.ObjectId(req.user.id), // Ensure ObjectId
             title,
-            category,
+            category: new Types.ObjectId(category), // Ensure category is ObjectId
             description,
-            images, // Store multiple image paths
+            image, // Single image path
+            likes: [], // Ensure an array
+            comments: [], // Ensure an array
         });
 
         await post.save();
@@ -75,7 +86,6 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
     }
 };
 
-import { Types } from "mongoose"; // Import Types for ObjectId
 
 export const toggleLikePost = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -93,15 +103,15 @@ export const toggleLikePost = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        // Ensure likes is initialized as an array of ObjectId's
-        if (!post.likes) {
+        // Ensure likes is an array of ObjectId's
+        if (!Array.isArray(post.likes)) {
             post.likes = [];
         }
 
-        // Cast userId to ObjectId to prevent casting issues
         const userObjectId = new Types.ObjectId(userId);
 
-        const likedIndex = post.likes.indexOf(userObjectId); // Check if user already liked
+        // Convert likes to strings for comparison
+        const likedIndex = post.likes.findIndex(id => id.toString() === userObjectId.toString());
 
         if (likedIndex === -1) {
             post.likes.push(userObjectId); // Add like
@@ -115,7 +125,6 @@ export const toggleLikePost = async (req: Request, res: Response): Promise<void>
         res.status(500).json({ error: "Server error", details: (error as Error).message });
     }
 };
-
 
 
 export const addComment = async (req: Request, res: Response): Promise<void> => {
@@ -140,15 +149,15 @@ export const addComment = async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
-        // Ensure comments is initialized as an array of objects
-        if (!post.comments) {
+        // Ensure comments is an array
+        if (!Array.isArray(post.comments)) {
             post.comments = [];
         }
 
         // Create a new comment object with userId and commentText
         const newComment = {
             userId: new Types.ObjectId(userId), // Ensure userId is ObjectId
-            commentText,
+            commentText: commentText.toString(), // Ensure it's a string
         };
 
         post.comments.push(newComment); // Add comment to the array
