@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Request, Response } from "express";
 import Order from "../models/Order";
-
+import jwt from "jsonwebtoken";
 // export const addToCart = async (req: Request, res: Response): Promise<void> => {
 //     try {
 //         const { userId, products, totalAmount, paymentMethod, transactionId, paymentDetails } = req.body;
@@ -126,17 +126,26 @@ export const addToCart = async (req: Request, res: Response): Promise<void> => {
 
 export const getCart = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { userId } = req.params;
+        // ✅ Extract the Bearer Token
+        const authHeader = req.headers.authorization;
 
-        // ✅ Validate `userId`
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            res.status(400).json({ error: "Invalid user ID format" });
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            res.status(401).json({ error: "Unauthorized: No token provided" });
             return;
         }
 
-        // ✅ Fetch cart details for the user (latest order)
-        const cart = await Order.findOne({ userId })
-            .populate("products.productId", "name price image") // Fetch product details
+        // ✅ Decode the token to get `userId`
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string };
+
+        if (!decoded || !decoded.id) {
+            res.status(401).json({ error: "Unauthorized: Invalid token" });
+            return;
+        }
+
+        // ✅ Fetch the latest cart/order for the authenticated user
+        const cart = await Order.findOne({ userId: new mongoose.Types.ObjectId(decoded.id) })
+            .populate("products.productId", "name price image") // Populate product details
             .sort({ createdAt: -1 }); // Get the latest order
 
         if (!cart) {
@@ -147,6 +156,6 @@ export const getCart = async (req: Request, res: Response): Promise<void> => {
         res.status(200).json({ message: "Cart details retrieved", cart });
     } catch (error) {
         console.error("Error fetching cart:", error);
-        res.status(500).json({ error: "Server error", details:error });
+        res.status(500).json({ error: "Server error", details: error instanceof Error ? error.message : error });
     }
 };
