@@ -310,3 +310,25 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ error: "Server error" });
   }
 };
+
+
+//get all order
+
+export const getAllOrders = async (req: Request, res: Response): Promise<void> => {
+  try {
+      // ✅ Fetch all orders with user and product details
+      const orders = await Order.find()
+          .populate("userId", "name email phone note") // Get user details
+          .populate("products.productId", "name price image"); // Get product details
+
+      if (!orders || orders.length === 0) {
+          res.status(404).json({ error: "No orders found" });
+          return;
+      }
+
+      res.status(200).json({ message: "Orders retrieved successfully", orders });
+  } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ error: "Server error", details: error});
+  }
+};

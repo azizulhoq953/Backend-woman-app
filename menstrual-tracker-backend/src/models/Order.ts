@@ -3,26 +3,14 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IOrder extends Document {
   userId: string;
   products: { productId: string; quantity: number }[];
+  note:string,
+  paymentDetails:[],
   totalAmount: number;
   paymentMethod: string;
   transactionId: string;
 }
 
-// const OrderSchema: Schema = new Schema(
-//   {
-//     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-//     products: [
-//       {
-//         productId: { type: Schema.Types.ObjectId, ref: "Product" },
-//         quantity: { type: Number, required: true },
-//       },
-//     ],
-//     totalAmount: { type: Number, required: true },
-//     paymentMethod: { type: String, required: true },
-//     transactionId: { type: String, required: true },
-//   },
-//   { timestamps: true }
-// );
+
 
 const OrderSchema: Schema = new Schema(
   {
@@ -33,6 +21,7 @@ const OrderSchema: Schema = new Schema(
               quantity: { type: Number, required: true },
           },
       ],
+      note: {type: String, required: false },
       totalAmount: { type: Number, required: true },
       paymentMethod: { type: String, enum: ["bkash", "nagad"], required: true },
       transactionId: { type: String, required: true },

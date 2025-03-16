@@ -53,7 +53,41 @@ export const addCounselor = async (req: Request, res: Response): Promise<void> =
       res.status(500).json({ error: "Server error", details: (error as Error).message });
     }
   };
-  
+
+export const loginCounselor = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            res.status(400).json({ error: "Email and password are required" });
+            return;
+        }
+
+        const counselor = await Counselor.findOne({ email });
+        if (!counselor) {
+            res.status(404).json({ error: "Invalid email or password" });
+            return;
+        }
+
+        const isMatch = await bcrypt.compare(password, counselor.password);
+        if (!isMatch) {
+            res.status(401).json({ error: "Invalid email or password" });
+            return;
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: counselor._id, email: counselor.email },
+            process.env.JWT_SECRET || "your_jwt_secret",
+            { expiresIn: "7d" }
+        );
+
+        res.status(200).json({ message: "Login successful", token, counselor });
+    } catch (error) {
+        res.status(500).json({ error: "Server error", details: (error as Error).message });
+    }
+};
+
 
 // ✅ Get All Counselors
 export const getAllCounselors = async (req: Request, res: Response): Promise<void> => {
@@ -101,19 +135,19 @@ export const deleteCounselor = async (req: Request, res: Response): Promise<void
 
 
 export const updateCounselor = async (req: Request, res: Response): Promise<void> => {
-    try {
+  try {
       const { id } = req.params;
       const { name, email, phone, specialty, experience, education, bio, availability } = req.body;
       const imageFile = req.file; // Multer handles file uploads
-  
+
       // Check if counselor exists
       const counselor = await Counselor.findById(id);
       if (!counselor) {
-        res.status(404).json({ error: "Counselor not found" });
-        return;
+          res.status(404).json({ error: "Counselor not found" });
+          return;
       }
-  
-      // Update counselor details
+
+      // Update fields if provided
       if (name) counselor.name = name;
       if (email) counselor.email = email;
       if (phone) counselor.phone = phone;
@@ -122,57 +156,54 @@ export const updateCounselor = async (req: Request, res: Response): Promise<void
       if (education) counselor.education = education;
       if (bio) counselor.bio = bio;
       if (availability) counselor.availability = availability;
-  
+
       // If a new image is uploaded, update the image path
       if (imageFile) {
-        counselor.image = path.join("uploads", imageFile.filename);
+          counselor.image = path.join("uploads", imageFile.filename);
       }
-  
+
       await counselor.save();
-  
       res.status(200).json({ message: "Counselor updated successfully", counselor });
-    } catch (error) {
+  } catch (error) {
       res.status(500).json({ error: "Server error", details: (error as Error).message });
-    }
-  };
-  
-  export const updateCounselorPassword = async (req: Request, res: Response): Promise<void> => {
-    try {
+  }
+};
+
+// Update counselor password
+export const updateCounselorPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
       const { id } = req.params;
       const { currentPassword, newPassword, confirmPassword } = req.body;
-  
-      // Validate input
+
       if (!currentPassword || !newPassword || !confirmPassword) {
-        res.status(400).json({ error: "All fields are required" });
-        return;
+          res.status(400).json({ error: "All fields are required" });
+          return;
       }
-  
+
       if (newPassword !== confirmPassword) {
-        res.status(400).json({ error: "New passwords do not match" });
-        return;
+          res.status(400).json({ error: "New passwords do not match" });
+          return;
       }
-  
-      // Find counselor by ID
+
       const counselor = await Counselor.findById(id);
       if (!counselor) {
-        res.status(404).json({ error: "Counselor not found" });
-        return;
+          res.status(404).json({ error: "Counselor not found" });
+          return;
       }
-  
-      // Verify current password
+
       const isMatch = await bcrypt.compare(currentPassword, counselor.password);
       if (!isMatch) {
-        res.status(400).json({ error: "Current password is incorrect" });
-        return;
+          res.status(400).json({ error: "Current password is incorrect" });
+          return;
       }
-  
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      counselor.password = hashedPassword;
+
+      counselor.password = await bcrypt.hash(newPassword, 10);
       await counselor.save();
-  
+
       res.status(200).json({ message: "Password updated successfully" });
-    } catch (error) {
+  } catch (error) {
       res.status(500).json({ error: "Server error", details: (error as Error).message });
-    }
-  };
+  }
+};
+
+  

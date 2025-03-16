@@ -2,6 +2,7 @@ import { Request, response, Response } from "express";
 import Post from "../models/Post";
 import { request } from "http";
 import { Types } from "mongoose"; // Import Types for ObjectId
+import User from "../models/User";
 
 // Extend Request type to include `user`
 interface AuthenticatedRequest extends Request {
@@ -219,5 +220,116 @@ export const getAllPosts = async (req: Request, res: Response): Promise<void> =>
         res.json(posts);
     } catch (error) {
         res.status(500).json({ error: "Server error", details: (error as Error).message });
+    }
+};
+
+
+export const searchPosts = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { query } = req.query;
+        if (!query) {
+            res.status(400).json({ error: "Search query is required" });
+            return;
+        }
+        const posts = await Post.find({
+            $or: [
+                { title: { $regex: query, $options: "i" } },
+                { description: { $regex: query, $options: "i" } }
+            ]
+        }).sort({ createdAt: -1 });
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ error: "Server error", details: (error as Error).message });
+    }
+};
+
+// Save Post
+export const savePost = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { postId } = req.params;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+
+        const post = await Post.findById(postId);
+        if (!post) {
+            res.status(404).json({ error: "Post not found" });
+            return;
+        }
+
+        const savedIndex = user.savedPosts.findIndex(id => id.toString() === postId);
+
+        if (savedIndex === -1) {
+            user.savedPosts.push(new Types.ObjectId(postId));
+        } else {
+            user.savedPosts.splice(savedIndex, 1);
+        }
+        await user.save();
+
+        res.status(200).json({ message: "Post saved status updated", savedPosts: user.savedPosts });
+    } catch (error) {
+        res.status(500).json({ error: "Server error", details: (error as Error).message });
+    }
+};
+
+// Follow Post
+export const followPost = async (req: Request, res: Response): Promise<void> =>{
+    try {
+        const { postId } = req.params;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+
+        const post = await Post.findById(postId);
+        if (!post) {
+            res.status(404).json({ error: "Post not found" });
+            return;
+        }
+
+        if (!Array.isArray(post.followers)) {
+            post.followers = [];
+        }
+
+        const userObjectId = new Types.ObjectId(userId);
+        const followIndex = post.followers.findIndex(id => id.toString() === userObjectId.toString());
+
+        if (followIndex === -1) {
+            post.followers.push(userObjectId);
+        } else {
+            post.followers.splice(followIndex, 1);
+        }
+        await post.save();
+
+        res.status(200).json({ message: "Follow status updated", followers: post.followers.length });
+    } catch (error) {
+        res.status(500).json({ error: "Server error", details: (error as Error).message });
+    }
+};
+
+export const getPostFollowers = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { postId } = req.params;
+
+        const post = await Post.findById(postId).populate("followers", "name email"); // Populating followers
+        if (!post) {
+            res.status(404).json({ error: "Post not found" });
+            return;
+        }
+
+        res.status(200).json({ followers: post.followers });
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
     }
 };

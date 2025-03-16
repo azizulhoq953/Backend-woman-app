@@ -1,10 +1,11 @@
 
 import express from "express";
 import { authMiddleware, adminMiddleware, authenticateAdmin } from "../middlewares/auth.middleware";
-import { register, login, getProfile } from "../controllers/authController";
-import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdminProfile, changeAdminPassword } from "../controllers/adminController";
-import { addComment, createPost, getAllPosts, getComments, getPostsByCategory, toggleLikePost } from "../controllers/post.controller";
-import { addToCart } from "../controllers/addtocart";
+import { register, login, getProfile} from "../controllers/authController";
+import {getFollowing, getFollowers, followUser} from "../controllers/follower.controllers";
+import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdminProfile, changeAdminPassword, getAllOrders } from "../controllers/adminController";
+import { addComment, createPost, followPost, getAllPosts, getComments, getPostFollowers, getPostsByCategory, savePost, searchPosts, toggleLikePost } from "../controllers/post.controller";
+import { addToCart, getCart } from "../controllers/addtocart";
 import { placeOrder } from "../controllers/order.controller";
 import bcrypt from "bcrypt";
 import axios from "axios";
@@ -21,7 +22,8 @@ import { forgetPassword, resetPassword, verifyOtp } from "../controllers/forget"
 import uploadImages from "../multer/multer";
 import { createMenstrualHealth, updateMenstrualHealth } from "../controllers/question.controller";
 import { getNotifications } from "../controllers/notification";
-import { addCounselor, deleteCounselor, getAllCounselors, getCounselorById, updateCounselor, updateCounselorPassword } from "../controllers/counseller";
+import { addCounselor, deleteCounselor, getAllCounselors, getCounselorById, loginCounselor, updateCounselor, updateCounselorPassword } from "../controllers/counseller";
+
 // import { createPost, getPostsByCategory } from "../controllers/postController";
 // import { addToCart, placeOrder } from "../controllers/orderController";
 
@@ -33,13 +35,21 @@ router.post("/login", login);
 
 
 // User Routes
-router.post("/post", authMiddleware, uploadPostImage.array('PostImage',10),createPost );
-router.get("/post", getAllPosts)
-router.get("/posts/category/:category", getPostsByCategory);
 router.get("/users/getProfile", authMiddleware,getProfile);
-router.post("/cart", authMiddleware, addToCart);
-router.post("/order", authMiddleware, placeOrder);
+router.post("/orders", authMiddleware, addToCart);
+router.get("/users/order",authMiddleware,getCart)
+router.get("/admin/all-orders",authenticateAdmin,getAllOrders)
+// router.post("/order", authMiddleware, placeOrder);
 // router.put("/users/updateprofile", authMiddleware, uploadProfileImage.single('profileImage'), updateProfile)
+
+//post
+router.post("/post", authMiddleware, uploadPostImage.array('PostImage',10),createPost );
+router.post("/post/follow/:postId", followPost );
+router.post("/post/saved/:postId", savePost)
+router.get("/post/followers/:postId",getPostFollowers);
+router.get("/post", getAllPosts)
+router.get("/post/search", searchPosts)
+router.get("/posts/category/:category", getPostsByCategory);
 
 
 ///like comments
@@ -83,17 +93,23 @@ router.put("/question",authMiddleware,updateMenstrualHealth)
 router.get("/partner/:partnerId", getUserByPartnerId); // ✅ Get User by Partner ID; // ✅ Get User's Partner ID
 router.get("/partner/profile/:userId", getPartnerProfile); 
 
-// router.post("/admin/product", authMiddleware, adminMiddleware, addProduct);
-//counseller
+//followers
+
+router.post("/users/follow/:userId", followUser); 
+router.get("/users/followers/:userId", getFollowers); 
+router.get("/users/following/:userId", getFollowing); 
 
 
-// Routes
+
+
+// Routes counseller
 router.post("/admin/add", upload.single("image"), authenticateAdmin,addCounselor); // Admin adds counselor
+router.post("/counseller/login", loginCounselor)
 router.get("/all", getAllCounselors); // Get all counselors
 router.get("/:id", getCounselorById); // Get counselor by ID
 router.delete("/:id", deleteCounselor); // Admin deletes counselor
-router.put("/update",authMiddleware, updateCounselor); // Admin deletes counselor
-router.put("/password", updateCounselorPassword); // Admin deletes counselor
+router.put("/update/:id",authMiddleware, updateCounselor); // Admin deletes counselor
+router.put("/password/:id", updateCounselorPassword); // Admin deletes counselor
 
 
 export default router;
