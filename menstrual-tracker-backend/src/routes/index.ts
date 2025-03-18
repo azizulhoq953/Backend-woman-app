@@ -3,7 +3,7 @@ import express from "express";
 import { authMiddleware, adminMiddleware, authenticateAdmin } from "../middlewares/auth.middleware";
 import { register, login, getProfile} from "../controllers/authController";
 import {getFollowing, getFollowers, followUser} from "../controllers/follower.controllers";
-import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdminProfile, changeAdminPassword, getAllOrders } from "../controllers/adminController";
+import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdminProfile, changeAdminPassword, getAllOrders  } from "../controllers/adminController";
 import { addComment, createPost, followPost, getAllPosts, getComments, getPostFollowers, getPostsByCategory, savePost, searchPosts, toggleLikePost } from "../controllers/post.controller";
 import { addToCart, getCart } from "../controllers/addtocart";
 import { placeOrder } from "../controllers/order.controller";
@@ -19,16 +19,19 @@ const uploadProductImages = multer({ dest: 'uploads/PostImage/' });
 const uploadPostImage = multer({ dest: 'uploads//' });
 // import { getNotifications, updateProfile } from "../controllers/notification";
 import { forgetPassword, resetPassword, verifyOtp } from "../controllers/forget";
-import uploadImages from "../multer/multer";
+import uploadImages, { uploadSingleImage } from "../multer/multer";
 import { createMenstrualHealth, updateMenstrualHealth } from "../controllers/question.controller";
 import { getNotifications } from "../controllers/notification";
 import { addCounselor, deleteCounselor, getAllCounselors, getCounselorById, loginCounselor, updateCounselor, updateCounselorPassword } from "../controllers/counseller";
+import { createMentalHealthPost, getMentalHealthPosts, getMentalHealthPostById,  updateMentalHealthPost } from "../controllers/mentalhelta";
+import { PostAdmin, GetAllPostsAdmin} from "../controllers/admin.post.controller";
 
 // import { createPost, getPostsByCategory } from "../controllers/postController";
 // import { addToCart, placeOrder } from "../controllers/orderController";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
+
 // Auth Routes
 router.post("/register", register);
 router.post("/login", login);
@@ -39,11 +42,14 @@ router.get("/users/getProfile", authMiddleware,getProfile);
 router.post("/orders", authMiddleware, addToCart);
 router.get("/users/order",authMiddleware,getCart)
 router.get("/admin/all-orders",authenticateAdmin,getAllOrders)
+router.get("/admin/mental", authMiddleware,upload.single('image'), getMentalHealthPosts);
+router.get("/admin/:id", authMiddleware,upload.single('image'), getMentalHealthPostById);
 // router.post("/order", authMiddleware, placeOrder);
 // router.put("/users/updateprofile", authMiddleware, uploadProfileImage.single('profileImage'), updateProfile)
 
 //post
-router.post("/post", authMiddleware, uploadPostImage.array('PostImage',10),createPost );
+// router.post("/post", authMiddleware, uploadProductImages.array('image',10),createPost );
+router.post('/post', authMiddleware, uploadSingleImage, createPost);
 router.post("/post/follow/:postId", followPost );
 router.post("/post/saved/:postId", savePost)
 router.get("/post/followers/:postId",getPostFollowers);
@@ -68,14 +74,22 @@ router.post("/reset-password", resetPassword);   // Step 3: Reset password
 router.get("/admin/users", authMiddleware, adminMiddleware, getUsers);
 router.get("/admin/posts", authMiddleware, adminMiddleware, getCommunityPosts);
 router.get("/admin/orders", authMiddleware, adminMiddleware, getOrders);
+router.get("/admin/post/get", authMiddleware,GetAllPostsAdmin)
 router.post("/admin/category", createCategory);
 router.post("/admin/create", createAdmin)
 router.post("/admin/login", loginAdmin); 
+router.post("/admin/mental",  authMiddleware, upload.single('image'),createMentalHealthPost); 
+router.post("/admin/post", authMiddleware,upload.single('image'), PostAdmin);
+router.post("/admin/post", authMiddleware,upload.single('image'), updateMentalHealthPost);
+// router.get("/admin/apost", authMiddleware,upload.single('image'), GetAllPostsAdmin);
+
+
+
 router.get("/admin/profile", authenticateAdmin, getAdminProfile)
 router.post("/admin/change-password",authenticateAdmin, changeAdminPassword)
 //products
 
-router.post("/admin/addProduct", authMiddleware, uploadProductImages.array('productImages', 10), addProductHandler);
+router.post("/admin/addProduct", authMiddleware, uploadProductImages.array('image', 10), addProductHandler);
 router.get("/allproducts", authMiddleware, getAllProducts);
 router.get("/products/:id", authMiddleware, getProductById);
 router.get("/allcategory", authMiddleware, getAllCategories);
@@ -93,7 +107,7 @@ router.put("/question",authMiddleware,updateMenstrualHealth)
 router.get("/partner/:partnerId", getUserByPartnerId); // ✅ Get User by Partner ID; // ✅ Get User's Partner ID
 router.get("/partner/profile/:userId", getPartnerProfile); 
 
-//followers
+//followers users
 
 router.post("/users/follow/:userId", followUser); 
 router.get("/users/followers/:userId", getFollowers); 

@@ -9,6 +9,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import path from "path";
 import multer from "multer";
+import { Types } from "mongoose";
+import { AuthenticatedRequest } from "../types/types";
 const uploadProductImages = multer({ dest: 'uploads/' });
 // Hash password using bcrypt
 
@@ -80,6 +82,7 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
   try {

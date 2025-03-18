@@ -7,7 +7,7 @@ import Counselor from "../models/Counselor";
 // ✅ Add Counselor (Admin Only)
 export const addCounselor = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { name, email, password, phone, specialty, experience, education, bio, availability } = req.body;
+      const { name, email, password, phone, specialty, experience, education,location,time, bio, availability } = req.body;
       const imageFile = req.file; // Multer handles file uploads
   
       // Validate required fields: name and email
@@ -41,6 +41,8 @@ export const addCounselor = async (req: Request, res: Response): Promise<void> =
         specialty,
         experience,
         education,
+        location,
+        time,
         bio,
         image: imagePath,
         availability: availability || [],
@@ -137,7 +139,7 @@ export const deleteCounselor = async (req: Request, res: Response): Promise<void
 export const updateCounselor = async (req: Request, res: Response): Promise<void> => {
   try {
       const { id } = req.params;
-      const { name, email, phone, specialty, experience, education, bio, availability } = req.body;
+      const { name, email, phone, specialty, experience, education,location, time, bio, availability } = req.body;
       const imageFile = req.file; // Multer handles file uploads
 
       // Check if counselor exists
@@ -154,6 +156,8 @@ export const updateCounselor = async (req: Request, res: Response): Promise<void
       if (specialty) counselor.specialty = specialty;
       if (experience) counselor.experience = experience;
       if (education) counselor.education = education;
+      if (location) counselor.location = location;
+      if (time) counselor.time = time;
       if (bio) counselor.bio = bio;
       if (availability) counselor.availability = availability;
 

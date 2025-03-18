@@ -8,6 +8,8 @@ export interface ICounselor extends Document {
   specialty: string;
   experience: number;
   education: string;
+  location: string;
+  time: Date;
   bio: string;
   image: string;
   availability: string[];
@@ -23,6 +25,8 @@ const CounselorSchema: Schema = new Schema(
     specialty: { type: String, required: false },
     experience: { type: Number, required: false },
     education: { type: String, required: false },
+    location: {type: String, required: false},
+    time: {type: Date, required:false},
     bio: { type: String, required: false },
     image: { type: String, required: false }, // Store image URL
     availability: { type: [String], default: [] }, // Available days
