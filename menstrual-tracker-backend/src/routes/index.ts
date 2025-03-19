@@ -3,8 +3,8 @@ import express from "express";
 import { authMiddleware, adminMiddleware, authenticateAdmin } from "../middlewares/auth.middleware";
 import { register, login, getProfile} from "../controllers/authController";
 import {getFollowing, getFollowers, followUser} from "../controllers/follower.controllers";
-import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdminProfile, changeAdminPassword, getAllOrders  } from "../controllers/adminController";
-import { addComment, createPost, followPost, getAllPosts, getComments, getPostFollowers, getPostsByCategory, savePost, searchPosts, toggleLikePost } from "../controllers/post.controller";
+import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdmin, changeAdminPassword, getAllOrders  } from "../controllers/adminController";
+import { addComment, createPost, followPost, getAllPosts, getComments, getPostFollowers, getPostsByCategory, getSavedPosts, savePost, searchPostsByCategory, toggleLikePost } from "../controllers/post.controller";
 import { addToCart, getCart } from "../controllers/addtocart";
 import { placeOrder } from "../controllers/order.controller";
 import bcrypt from "bcrypt";
@@ -51,10 +51,11 @@ router.get("/admin/:id", authMiddleware,upload.single('image'), getMentalHealthP
 // router.post("/post", authMiddleware, uploadProductImages.array('image',10),createPost );
 router.post('/post', authMiddleware, uploadSingleImage, createPost);
 router.post("/post/follow/:postId", followPost );
-router.post("/post/saved/:postId", savePost)
+router.post("/post/saved/:postId", authMiddleware,savePost)
 router.get("/post/followers/:postId",getPostFollowers);
 router.get("/post", getAllPosts)
-router.get("/post/search", searchPosts)
+router.get("/post/search", searchPostsByCategory)
+router.get("/post/saved", authMiddleware,getSavedPosts)
 router.get("/posts/category/:category", getPostsByCategory);
 
 
@@ -76,16 +77,16 @@ router.get("/admin/posts", authMiddleware, adminMiddleware, getCommunityPosts);
 router.get("/admin/orders", authMiddleware, adminMiddleware, getOrders);
 router.get("/admin/post/get", authMiddleware,GetAllPostsAdmin)
 router.post("/admin/category", createCategory);
-router.post("/admin/create", createAdmin)
+router.post("/admin/create",createAdmin)
 router.post("/admin/login", loginAdmin); 
 router.post("/admin/mental",  authMiddleware, upload.single('image'),createMentalHealthPost); 
-router.post("/admin/post", authMiddleware,upload.single('image'), PostAdmin);
+router.post("/admin/post",authMiddleware,upload.single('image'), PostAdmin);
 router.post("/admin/post", authMiddleware,upload.single('image'), updateMentalHealthPost);
 // router.get("/admin/apost", authMiddleware,upload.single('image'), GetAllPostsAdmin);
 
 
 
-router.get("/admin/profile", authenticateAdmin, getAdminProfile)
+router.get("/get",authenticateAdmin, getAdmin)
 router.post("/admin/change-password",authenticateAdmin, changeAdminPassword)
 //products
 

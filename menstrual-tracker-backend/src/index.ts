@@ -28,8 +28,6 @@
 // const PORT = process.env.PORT || 5000;
 // app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-
-
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -45,8 +43,9 @@ const app = express();
 // CORS middleware
 const corsOptions = {
   origin: "http://localhost:3000", // Allow frontend running on port 3000
-  methods: ["GET", "POST"], // Allow GET and POST methods
-  allowedHeaders: ["Content-Type"], // Allow specific headers
+  methods: ["GET", "POST", "PUT", "DELETE"], // Allow GET and POST methods
+  allowedHeaders: ["Content-Type", "Authorization"], // Allow specific headers (including Authorization)
+  credentials: true, // Allow credentials (cookies, authorization headers)
 };
 
 app.use(cors(corsOptions));

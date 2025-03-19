@@ -151,6 +151,41 @@ export const createAdmin = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+export const getAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+      // Get the token from the Authorization header
+      const token = req.headers.authorization?.split(' ')[1];
+
+      if (!token) {
+          res.status(401).json({ error: "No token provided" });
+          return;
+      }
+
+      // Verify the JWT token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string; role: string };
+
+      // Check if the decoded token has a valid role
+      if (decoded.role !== 'admin') {
+          res.status(403).json({ error: "Unauthorized access" });
+          return;
+      }
+
+      // Find the admin using the decoded ID
+      const admin = await Admin.findById(decoded.id);
+
+      if (!admin) {
+          res.status(404).json({ error: "Admin not found" });
+          return;
+      }
+
+      // Return the admin's data (excluding password)
+      const { password, ...adminData } = admin.toObject();
+      res.status(200).json(adminData);
+
+  } catch (error) {
+      res.status(500).json({ error: "Server error" });
+  }
+};
 
 export const loginAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -186,28 +221,6 @@ export const loginAdmin = async (req: Request, res: Response): Promise<void> => 
       res.status(500).json({ error: "Server error" });
   }
 };
-
-export const getAdminProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ error: "Unauthorized access" });
-      return;
-    }
-
-    const admin = await Admin.findById(req.user.id).select("-password"); // Exclude password
-
-    if (!admin) {
-      res.status(404).json({ error: "Admin not found" });
-      return;
-    }
-
-    res.status(200).json({ admin });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
 
 
 
