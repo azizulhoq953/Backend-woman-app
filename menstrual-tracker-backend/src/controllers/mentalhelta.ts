@@ -136,29 +136,30 @@ export const createMentalHealthPost = async (req: AuthenticatedRequest, res: Res
     }
   };
 
-export const getMentalHealthPosts = async (req: Request, res: Response): Promise<void> => {
+  export const getMentalHealthPosts = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Fetch all posts and populate the category field
-      const mentalHealthPosts = await Mental.find().populate("category");
-  
-      if (!mentalHealthPosts || mentalHealthPosts.length === 0) {
-        res.status(404).json({ error: "No mental health posts found" });
-        return;
-      }
-  
-      // Construct full image URLs
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const formattedPosts = mentalHealthPosts.map(Mental => ({
-        ...Mental.toObject(),
-        categoryName: (Mental.category as any)?.name || "Unknown", // Handle missing category
-        imageUrl: Mental.image ? `${baseUrl}/${Mental.image}` : ''
-      }));
-  
-      res.status(200).json({ posts: formattedPosts });
+        // Fetch all posts and populate the category field
+        const mentalHealthPosts = await Mental.find().populate("category");
+
+        if (!mentalHealthPosts || mentalHealthPosts.length === 0) {
+            res.status(404).json({ error: "No mental health posts found" });
+            return;
+        }
+
+        // Construct full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const formattedPosts = mentalHealthPosts.map(post => ({
+            ...post.toObject(),
+            categoryName: (post.category as any)?.name || "Unknown", // Handle missing category
+            imageUrl: post.image ? `${baseUrl}/${post.image}` : ''
+        }));
+
+        res.status(200).json({ posts: formattedPosts });
     } catch (error) {
-      res.status(500).json({ error: "Server error", details: (error as Error).message });
+        res.status(500).json({ error: "Server error", details: (error as Error).message });
     }
-  };
+};
+
   
   
 

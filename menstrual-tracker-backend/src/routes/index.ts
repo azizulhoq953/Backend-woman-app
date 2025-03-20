@@ -42,7 +42,7 @@ router.get("/users/getProfile", authMiddleware,getProfile);
 router.post("/orders", authMiddleware, addToCart);
 router.get("/users/order",authMiddleware,getCart)
 router.get("/admin/all-orders",authenticateAdmin,getAllOrders)
-router.get("/admin/mental", authMiddleware,upload.single('image'), getMentalHealthPosts);
+router.get("/admin/mental",upload.single('image'), getMentalHealthPosts);
 router.get("/admin/:id", authMiddleware,upload.single('image'), getMentalHealthPostById);
 // router.post("/order", authMiddleware, placeOrder);
 // router.put("/users/updateprofile", authMiddleware, uploadProfileImage.single('profileImage'), updateProfile)

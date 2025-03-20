@@ -217,14 +217,76 @@ export const PostAdmin = async (req: AuthenticatedRequest, res: Response): Promi
     }
 };
 
-export const GetAllPostsAdmin = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    // Ensure user is authenticated
-    if (!req.user) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
+// export const GetAllPostsAdmin = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+//   try {
+//     // Ensure user is authenticated
+//     if (!req.user) {
+//       res.status(401).json({ error: "Unauthorized" });
+//       return;
+//     }
 
+//     // Pagination parameters
+//     const page = parseInt(req.query.page as string) || 1;
+//     const limit = parseInt(req.query.limit as string) || 10;
+//     const skip = (page - 1) * limit;
+
+//     // Filter parameters
+//     const categoryFilter = req.query.category ? { 'category': req.query.category } : {};
+//     const titleFilter = req.query.title 
+//       ? { 'title': { $regex: req.query.title as string, $options: 'i' } }
+//       : {};
+
+//     // Combine filters
+//     const filters = {
+//       ...categoryFilter,
+//       ...titleFilter,
+//       // Filter by the authenticated user's ID
+//       userId: req.user.id
+//     };
+
+//     // Get total count for pagination
+//     const totalPosts = await Apost.countDocuments(filters);
+//     const totalPages = Math.ceil(totalPosts / limit);
+
+//     // Fetch posts with pagination, sorting, and population
+//     const posts = await Apost.find(filters)
+//       .sort({ createdAt: -1 })
+//       .skip(skip)
+//       .limit(limit)
+//       .populate('category')
+//       .populate('userId', 'username profilePicture');
+
+//     // Construct proper URLs for images
+//     const baseUrl = `${req.protocol}://${req.get('host')}`;
+//     const formattedPosts = posts.map(post => {
+//       const postObj = post.toObject();
+      
+//       return {
+//         ...postObj,
+//         categoryName: (post.category as any)?.name || '',
+//         imageUrl: post.image ? `${baseUrl}/${post.image}` : '',
+//       };
+//     });
+
+//     res.status(200).json({
+//       posts: formattedPosts,
+//       pagination: {
+//         totalPosts,
+//         totalPages,
+//         currentPage: page,
+//         limit
+//       }
+//     });
+//   } catch (error) {
+//     res.status(500).json({ 
+//       error: "Failed to fetch posts", 
+//       details: (error as Error).message 
+//     });
+//   }
+// };
+
+export const GetAllPostsAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
     // Pagination parameters
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -232,16 +294,14 @@ export const GetAllPostsAdmin = async (req: AuthenticatedRequest, res: Response)
 
     // Filter parameters
     const categoryFilter = req.query.category ? { 'category': req.query.category } : {};
-    const titleFilter = req.query.title 
+    const titleFilter = req.query.title
       ? { 'title': { $regex: req.query.title as string, $options: 'i' } }
       : {};
 
     // Combine filters
     const filters = {
       ...categoryFilter,
-      ...titleFilter,
-      // Filter by the authenticated user's ID
-      userId: req.user.id
+      ...titleFilter
     };
 
     // Get total count for pagination
@@ -260,7 +320,7 @@ export const GetAllPostsAdmin = async (req: AuthenticatedRequest, res: Response)
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const formattedPosts = posts.map(post => {
       const postObj = post.toObject();
-      
+
       return {
         ...postObj,
         categoryName: (post.category as any)?.name || '',
@@ -278,9 +338,9 @@ export const GetAllPostsAdmin = async (req: AuthenticatedRequest, res: Response)
       }
     });
   } catch (error) {
-    res.status(500).json({ 
-      error: "Failed to fetch posts", 
-      details: (error as Error).message 
+    res.status(500).json({
+      error: "Failed to fetch posts",
+      details: (error as Error).message
     });
   }
 };
