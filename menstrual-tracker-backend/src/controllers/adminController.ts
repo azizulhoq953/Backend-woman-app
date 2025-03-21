@@ -5,7 +5,7 @@ import Order from "../models/Order";
 import Category from "../models/category.model";
 import Product from "../models/Product";
 import Admin from "../models/admin.model";
-import bcrypt from "bcrypt";
+const bcrypt = require('bcryptjs');
 import jwt from "jsonwebtoken";
 import path from "path";
 import multer from "multer";

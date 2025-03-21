@@ -62,8 +62,6 @@ import jwt from "jsonwebtoken";
 
 //individual user
 
-
-
 export const addToCart = async (req: Request, res: Response): Promise<void> => {
     try {
         const { userId, products, totalAmount, paymentMethod, transactionId, paymentDetails, note } = req.body;

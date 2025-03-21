@@ -5,6 +5,8 @@ import  Category, { ICategory }  from '../models/category.model'; // Adjust if y
 import  Apost from '../models/admin.Post'; 
 
 import { Types } from 'mongoose';
+import path from 'path';
+import fs from 'fs';
 
 // export const createMentalHealthPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
 //   try {
@@ -67,74 +69,112 @@ import { Types } from 'mongoose';
 //   }
 // };
 
+
+
 export const createMentalHealthPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    try {
-      const { title, category, description } = req.body;
-      
-      // Validate required fields
-      if (!title || !category || !description) {
-        res.status(400).json({ error: "All fields (title, category, description) are required" });
-        return;
-      }
-  
-      // Check if the user is authorized
-      if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
-      }
-  
-      // Handle file upload - get the file path if an image was uploaded
-      let imagePath = '';
-      if (req.file) {
-        imagePath = req.file.path;
-      }
-  
-      // Find the category by name
-      const categoryExists = await Category.findOne({ name: category });
-  
-      if (!categoryExists) {
-        res.status(400).json({ error: "Category not found" });
-        return;
-      }
-  
-      // Create the new post
-      const mental = new Mental({
-        userId: new Types.ObjectId(req.user.id),
-        title,
-        category: categoryExists._id,  // Use category's _id
-        description,
-        image: imagePath,
-        likes: [],
-        comments: [],
-        followers: []
-      });
-  
-      // Save the post to the database
-      await mental.save();
-  
-      // Fetch the post with populated category details
-      const populatedPost = await Mental.findById(mental._id).populate("category");
-  
-      // Construct image URL
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const imageUrl = imagePath ? `${baseUrl}/${imagePath}` : '';
-  
-      if (populatedPost && populatedPost.category) {
-        res.status(201).json({
-          message: "Post created successfully",
-          post: {
-            ...populatedPost.toObject(),
-            categoryName: (populatedPost.category as any).name,
-            imageUrl: imageUrl
-          },
-        });
-      } else {
-        res.status(500).json({ error: "Failed to populate category" });
-      }
-    } catch (error) {
-      res.status(500).json({ error: "Server error", details: (error as Error).message });
+  try {
+    const { title, category, description } = req.body;
+    
+    // Validate required fields
+    if (!title || !category || !description) {
+      res.status(400).json({ error: "All fields (title, category, description) are required" });
+      return;
     }
-  };
+
+    // Check if the user is authorized
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    // Handle file upload - get the file path if an image was uploaded
+    let imagePath = '';
+    if (req.file) {
+      // Get the file's original path
+      imagePath = req.file.path.replace(/\\/g, '/');
+      
+      // Log file information for debugging
+      console.log("File details:", {
+        originalname: req.file.originalname,
+        filename: req.file.filename,
+        mimetype: req.file.mimetype,
+        path: req.file.path
+      });
+      
+      // Check if the path already has an extension
+      if (!path.extname(imagePath)) {
+        // Determine extension from mimetype
+        const mimeTypeMap: Record<string, string> = {
+          'image/jpeg': '.jpg',
+          'image/png': '.png',
+          'image/gif': '.gif',
+          'image/webp': '.webp'
+        };
+        
+        const extension = mimeTypeMap[req.file.mimetype] || '.jpg';
+        
+        // Add extension to the path
+        const newPath = `${imagePath}${extension}`;
+        
+        // Rename the actual file on disk
+        fs.renameSync(imagePath, newPath);
+        
+        // Update the path
+        imagePath = newPath;
+        console.log("Updated path with extension:", imagePath);
+      }
+    }
+
+    // Find the category by name
+    const categoryExists = await Category.findOne({ name: category });
+
+    if (!categoryExists) {
+      res.status(400).json({ error: "Category not found" });
+      return;
+    }
+
+    // Create the new post using the Mental model
+    const mentalPost = new Mental({
+      userId: new Types.ObjectId(req.user.id),
+      title,
+      category: categoryExists._id,
+      description,
+      image: imagePath,
+      likes: [],
+      comments: [],
+      followers: []
+    });
+
+    // Save the post to the database
+    await mentalPost.save();
+
+    // Fetch the post with populated category details
+    const populatedPost = await Mental.findById(mentalPost._id)
+      .populate("category")
+      .populate("userId", "name email");
+
+    // Construct image URL
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const imageUrl = imagePath ? `${baseUrl}/${imagePath}` : '';
+
+    if (populatedPost && populatedPost.category) {
+      res.status(201).json({
+        message: "Post created successfully",
+        post: {
+          ...populatedPost.toObject(),
+          categoryName: (populatedPost.category as any).name,
+          imageUrl: imageUrl
+        },
+      });
+    } else {
+      res.status(500).json({ error: "Failed to populate category" });
+    }
+  } catch (error) {
+    console.error("Error in createMentalHealthPost:", error);
+    res.status(500).json({ error: "Server error", details: (error as Error).message });
+  }
+};
+
 
   export const getMentalHealthPosts = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -148,17 +188,34 @@ export const createMentalHealthPost = async (req: AuthenticatedRequest, res: Res
 
         // Construct full image URLs
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const formattedPosts = mentalHealthPosts.map(post => ({
-            ...post.toObject(),
-            categoryName: (post.category as any)?.name || "Unknown", // Handle missing category
-            imageUrl: post.image ? `${baseUrl}/${post.image}` : ''
-        }));
+
+        const formattedPosts = mentalHealthPosts.map(post => {
+            let imageUrl = '';
+            if (post.image) {
+                // Ensure the image field contains the correct file name with extension
+                // Example: 'uploads/image-1742398194148-387313563.png'
+                imageUrl = `${baseUrl}/uploads/${post.image}`;
+            }
+
+            return {
+                description: post.description || "No description provided", // Assuming there's a description field
+                image: post.image || "", // Image path stored in the database, including extension
+                likes: post.likes || [], // Assuming this is an array of likes
+                comments: post.comments || [], // Assuming this is an array of comments
+                followers: post.followers || [], // Assuming this is an array of followers
+                createdAt: post.createdAt || "", // Date when the post was created
+                updatedAt: post.updatedAt || "", // Date when the post was last updated
+                categoryName: post.category ? post.category.name : "Unknown", // Category name
+                imageUrl: imageUrl, // Full image URL constructed, including the file extension
+            };
+        });
 
         res.status(200).json({ posts: formattedPosts });
     } catch (error) {
         res.status(500).json({ error: "Server error", details: (error as Error).message });
     }
 };
+
 
   
   

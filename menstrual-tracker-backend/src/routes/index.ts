@@ -79,7 +79,7 @@ router.get("/admin/post/get",GetAllPostsAdmin)
 router.post("/admin/category", createCategory);
 router.post("/admin/create",createAdmin)
 router.post("/admin/login", loginAdmin); 
-router.post("/admin/mental",  authMiddleware, upload.single('image'),createMentalHealthPost); 
+router.post("/admin/post/mental",  authMiddleware, upload.single('image'),createMentalHealthPost); 
 router.post("/admin/post",authMiddleware,upload.single('image'), PostAdmin);
 router.post("/admin/post", authMiddleware,upload.single('image'), updateMentalHealthPost);
 // router.get("/admin/apost", authMiddleware,upload.single('image'), GetAllPostsAdmin);

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import User from "../models/User";
-import bcrypt from "bcrypt";
+const bcrypt = require('bcryptjs');
 import jwt from "jsonwebtoken";
 import path from "path";
 import mongoose from "mongoose";
