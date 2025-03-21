@@ -75,7 +75,7 @@ router.post("/reset-password", resetPassword);   // Step 3: Reset password
 router.get("/admin/users", authMiddleware, adminMiddleware, getUsers);
 router.get("/admin/posts", authMiddleware, adminMiddleware, getCommunityPosts);
 router.get("/admin/orders", authMiddleware, adminMiddleware, getOrders);
-router.get("/admin/post/get", authMiddleware,GetAllPostsAdmin)
+router.get("/admin/post/get",GetAllPostsAdmin)
 router.post("/admin/category", createCategory);
 router.post("/admin/create",createAdmin)
 router.post("/admin/login", loginAdmin); 
