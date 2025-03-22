@@ -3,7 +3,7 @@ import express from "express";
 import { authMiddleware, adminMiddleware, authenticateAdmin } from "../middlewares/auth.middleware";
 import { register, login, getProfile} from "../controllers/authController";
 import {getFollowing, getFollowers, followUser} from "../controllers/follower.controllers";
-import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdmin, changeAdminPassword, getAllOrders  } from "../controllers/adminController";
+import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdmin, changeAdminPassword, getAllOrders, removeCategory  } from "../controllers/adminController";
 import { addComment, createPost, followPost, getAllPosts, getComments, getPostFollowers, getPostsByCategory, getSavedPosts, savePost, searchPostsByCategory, toggleLikePost } from "../controllers/post.controller";
 import { addToCart, getCart } from "../controllers/addtocart";
 import { placeOrder } from "../controllers/order.controller";
@@ -23,8 +23,8 @@ import uploadImages, { uploadSingleImage } from "../multer/multer";
 import { createMenstrualHealth, updateMenstrualHealth } from "../controllers/question.controller";
 import { getNotifications } from "../controllers/notification";
 import { addCounselor, deleteCounselor, getAllCounselors, getCounselorById, loginCounselor, updateCounselor, updateCounselorPassword } from "../controllers/counseller";
-import { createMentalHealthPost, getMentalHealthPosts, getMentalHealthPostById,  updateMentalHealthPost } from "../controllers/mentalhelta";
-import { PostAdmin, GetAllPostsAdmin} from "../controllers/admin.post.controller";
+import { createMentalHealthPost, getMentalHealthPosts, getMentalHealthPostById,  updateMentalHealthPost, deleteMentalHealthPost } from "../controllers/mentalhelta";
+import { PostAdmin, GetAllPostsAdmin, UpdatePost, DeletePost} from "../controllers/admin.post.controller";
 
 // import { createPost, getPostsByCategory } from "../controllers/postController";
 // import { addToCart, placeOrder } from "../controllers/orderController";
@@ -41,8 +41,9 @@ router.post("/login", login);
 router.get("/users/getProfile", authMiddleware,getProfile);
 router.post("/orders", authMiddleware, addToCart);
 router.get("/users/order",authMiddleware,getCart)
-router.get("/admin/all-orders",authenticateAdmin,getAllOrders)
-router.get("/admin/mental",upload.single('image'), getMentalHealthPosts);
+router.get("/admin/all-orders",getAllOrders)
+router.get("/admin/mental", getMentalHealthPosts);
+router.delete("/admin/mental/:postId", deleteMentalHealthPost);
 router.get("/admin/:id", authMiddleware,upload.single('image'), getMentalHealthPostById);
 // router.post("/order", authMiddleware, placeOrder);
 // router.put("/users/updateprofile", authMiddleware, uploadProfileImage.single('profileImage'), updateProfile)
@@ -76,25 +77,28 @@ router.get("/admin/users", authMiddleware, adminMiddleware, getUsers);
 router.get("/admin/posts", authMiddleware, adminMiddleware, getCommunityPosts);
 router.get("/admin/orders", authMiddleware, adminMiddleware, getOrders);
 router.get("/admin/post/get",GetAllPostsAdmin)
-router.post("/admin/category", createCategory);
+router.post("/admin/category",authenticateAdmin, createCategory);
+router.delete("/admin/category/:categoryId",authenticateAdmin, removeCategory );
 router.post("/admin/create",createAdmin)
 router.post("/admin/login", loginAdmin); 
+router.post("/admin/change-password",authenticateAdmin, changeAdminPassword)
+
 router.post("/admin/post/mental",  authMiddleware, upload.single('image'),createMentalHealthPost); 
+router.put("/admin/post/:id", authMiddleware,upload.single('image'), updateMentalHealthPost);
 router.post("/admin/post",authMiddleware,upload.single('image'), PostAdmin);
-router.post("/admin/post", authMiddleware,upload.single('image'), updateMentalHealthPost);
+router.put("/admin/post/:id", authMiddleware, adminMiddleware, upload.single('image'), UpdatePost);
+router.delete("/admin/post/:id", authMiddleware, adminMiddleware, DeletePost);
+
 // router.get("/admin/apost", authMiddleware,upload.single('image'), GetAllPostsAdmin);
 
 
-
-router.get("/get",authenticateAdmin, getAdmin)
-router.post("/admin/change-password",authenticateAdmin, changeAdminPassword)
 //products
 
 router.post("/admin/addProduct", authMiddleware, uploadProductImages.array('image', 10), addProductHandler);
 router.get("/allproducts", authMiddleware, getAllProducts);
 router.get("/products/:id", authMiddleware, getProductById);
-router.get("/allcategory", authMiddleware, getAllCategories);
-router.get("/category/:id", authMiddleware, getCategoryById);
+router.get("/allcategory", getAllCategories);
+router.get("/category/:categoryId", authMiddleware, getCategoryById);
 
 
 //Notification

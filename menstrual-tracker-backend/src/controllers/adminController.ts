@@ -30,59 +30,59 @@ export const getOrders = async (req: Request, res: Response) => {
 };
 
 
+
 // export const createCategory = async (req: Request, res: Response): Promise<void> => {
 //   try {
-//       const { name } = req.body;
+//     const { name } = req.body;
 
-//       if (!name) {
-//           res.status(400).json({ error: "Category name is required" });
-//           return; // Stop further execution
-//       }
+//     if (!name) {
+//       res.status(400).json({ error: "Category name is required" });
+//       return; // Stop further execution
+//     }
 
-//       const existingCategory = await Category.findOne({ name });
+//     const existingCategory = await Category.findOne({ name });
 
-//       if (existingCategory) {
-//           res.status(400).json({ error: "Category already exists" });
-//           return;
-//       }
+//     if (existingCategory) {
+//       res.status(400).json({ error: "Category already exists" });
+//       return;
+//     }
 
-//       const category = new Category({ name });
-//       await category.save();
+//     const category = new Category({ name });
+//     await category.save();
 
-//       res.status(201).json({ message: "Category created successfully", category });
+//     res.status(201).json({ message: "Category created successfully", category });
 //   } catch (error) {
-//       res.status(500).json({ error: "Server error" });
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
 //   }
 // };
 
-
-// Create Category
 export const createCategory = async (req: Request, res: Response): Promise<void> => {
   try {
+    // Ensure the user is authenticated
     const { name } = req.body;
-
     if (!name) {
-      res.status(400).json({ error: "Category name is required" });
-      return; // Stop further execution
+       res.status(400).json({ error: "Category name is required" });
+       return
     }
 
+    // Check if the category already exists
     const existingCategory = await Category.findOne({ name });
-
     if (existingCategory) {
-      res.status(400).json({ error: "Category already exists" });
-      return;
+       res.status(400).json({ error: "Category already exists" });
+       return
     }
 
+    // Create the new category and save it
     const category = new Category({ name });
     await category.save();
 
     res.status(201).json({ message: "Category created successfully", category });
   } catch (error) {
-    console.error(error);
+    console.error("Error creating category:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -118,36 +118,67 @@ export const addProductHandler = async (req: Request, res: Response): Promise<vo
 
 
 
+// export const createAdmin = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//       const { name, email, password } = req.body;
+
+//       if (!name || !email || !password) {
+//            res.status(400).json({ error: "All fields are required" });
+//            return
+//       }
+
+//       // Check if admin already exists
+//       const existingAdmin = await Admin.findOne({ email });
+//       if (existingAdmin) {
+//            res.status(400).json({ error: "Admin already exists" });
+//            return
+//       }
+
+//       // Hash password
+//       const hashedPassword = await bcrypt.hash(password, 10);
+
+//       const newAdmin = new Admin({ name, email, password: hashedPassword });
+//       await newAdmin.save();
+
+//       // Create JWT token
+//       const token = jwt.sign({ id: newAdmin._id, role: "admin" }, process.env.JWT_SECRET as string, {
+//           expiresIn: "7d",
+//       });
+
+//       res.status(201).json({ message: "Admin created successfully", token });
+//   } catch (error) {
+//       res.status(500).json({ error: "Server error" });
+//   }
+// };
+
 export const createAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
-      const { name, email, password } = req.body;
+    const { name, email, password } = req.body;
 
-      if (!name || !email || !password) {
-           res.status(400).json({ error: "All fields are required" });
-           return
-      }
+    if (!name || !email || !password) {
+      res.status(400).json({ error: "All fields are required" });
+      return;
+    }
 
-      // Check if admin already exists
-      const existingAdmin = await Admin.findOne({ email });
-      if (existingAdmin) {
-           res.status(400).json({ error: "Admin already exists" });
-           return
-      }
+    const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      res.status(400).json({ error: "Admin already exists" });
+      return;
+    }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+    const newAdmin = new Admin({ name, email, password, role: "admin" }); // 👈 No manual hashing
+    await newAdmin.save();
 
-      const newAdmin = new Admin({ name, email, password: hashedPassword });
-      await newAdmin.save();
+    const token = jwt.sign(
+      { id: newAdmin._id, role: "admin" },
+      process.env.JWT_SECRET as string,
+      { expiresIn: "7d" }
+    );
 
-      // Create JWT token
-      const token = jwt.sign({ id: newAdmin._id, role: "admin" }, process.env.JWT_SECRET as string, {
-          expiresIn: "7d",
-      });
-
-      res.status(201).json({ message: "Admin created successfully", token });
+    res.status(201).json({ message: "Admin created successfully", token });
   } catch (error) {
-      res.status(500).json({ error: "Server error" });
+    console.error("Create admin error:", error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -189,41 +220,94 @@ export const getAdmin = async (req: Request, res: Response): Promise<void> => {
 
 export const loginAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
-      const { email, password } = req.body;
+    const { email, password } = req.body;
 
-      // Validate email and password
-      if (!email || !password) {
-           res.status(400).json({ error: "Email and password are required" });
-           return
-      }
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
 
-      // Check if the admin exists
-      const admin = await Admin.findOne({ email });
-      if (!admin) {
-           res.status(401).json({ error: "Invalid credentials" });
-           return
-      }
+    const admin = await Admin.findOne({ email });
 
-      // Compare the password with the hashed password
-      const isMatch = await bcrypt.compare(password, admin.password);
-      if (!isMatch) {
-           res.status(401).json({ error: "Invalid credentials" });
-           return
-      }
+    if (!admin) {
+      console.log("No admin found with email:", email);
+      res.status(401).json({ error: "Invalid credentials" });
+      return;
+    }
 
-      // Generate a JWT token for the admin
-      const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET as string, {
-          expiresIn: "7d",
-      });
+    console.log("Login attempt:");
+    console.log("Entered password:", password);
+    console.log("Stored password hash:", admin.password);
 
-      res.json({ token });
+    const isMatch = await bcrypt.compare(password, admin.password);
+
+    console.log("Password match result:", isMatch);
+
+    if (!isMatch) {
+      res.status(401).json({ error: "Invalid credentials" });
+      return;
+    }
+
+    const token = jwt.sign(
+      { id: admin._id, role: admin.role },
+      process.env.JWT_SECRET as string,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ token });
   } catch (err) {
-      res.status(500).json({ error: "Server error" });
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
 
+// export const loginAdmin = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { email, password } = req.body;
 
+//     console.log("Login attempt received");
+//     console.log(`Email: ${email}, Password: ${password}`);
+
+//     // Validate email and password
+//     if (!email || !password) {
+//       res.status(400).json({ error: "Email and password are required" });
+//       return;
+//     }
+
+//     // Check if the admin exists
+//     const admin = await Admin.findOne({ email });
+//     if (!admin) {
+//       console.log("Admin not found");
+//       res.status(401).json({ error: "Invalid credentials" });
+//       return;
+//     }
+
+//     console.log("Admin found, checking password...");
+
+//     // Compare the password with the hashed password
+//     const isMatch = await bcrypt.compare(password, admin.password);
+//     if (!isMatch) {
+//       console.log("Password does not match");
+//       res.status(401).json({ error: "Invalid credentials" });
+//       return;
+//     }
+    
+
+//     console.log("Password match successful. Generating token...");
+
+//     // Generate a JWT token for the admin
+//     const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET as string, {
+//       expiresIn: "7d",
+//     });
+
+//     console.log("Token generated, sending response...");
+//     res.json({ token });
+//   } catch (err) {
+//     console.error("Error in login:", err);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 export const changeAdminPassword = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -258,10 +342,8 @@ export const changeAdminPassword = async (req: Request, res: Response): Promise<
       return;
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    admin.password = hashedPassword;
-    await admin.save();
+    admin.password = newPassword; // ✅ Let Mongoose pre-save hook handle hashing
+    await admin.save();           // ✅ This will trigger the hook
 
     res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
@@ -271,12 +353,25 @@ export const changeAdminPassword = async (req: Request, res: Response): Promise<
 };
 
 
+
+// export const getAllCategories = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const categories = await Category.find();
+//     res.status(200).json({ categories });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+// Controller for getting all categories
 export const getAllCategories = async (req: Request, res: Response): Promise<void> => {
   try {
-    const categories = await Category.find();
-    res.status(200).json({ categories });
+    // Fetch categories from the database
+    const categories = await Category.find(); 
+    res.status(200).json({ categories });  // Respond with the categories
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching categories:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -295,6 +390,32 @@ export const getCategoryById = async (req: Request, res: Response): Promise<void
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+export const removeCategory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { categoryId } = req.params; // Get the category ID from the URL parameters
+
+    if (!categoryId) {
+       res.status(400).json({ error: "Category ID is required" });
+       return
+    }
+
+    // Check if the category exists
+    const category = await Category.findById(categoryId);
+    if (!category) {
+       res.status(404).json({ error: "Category not found" });
+       return
+    }
+
+    // Delete the category
+    await Category.findByIdAndDelete(categoryId);
+
+    res.status(200).json({ message: "Category removed successfully" });
+  } catch (error) {
+    console.error("Error removing category:", error);
+    res.status(500).json({ error: "Server error", details: error });
   }
 };
 

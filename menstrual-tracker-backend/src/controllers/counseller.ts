@@ -5,56 +5,115 @@ import path from "path";
 import Counselor from "../models/Counselor";
 
 // ✅ Add Counselor (Admin Only)
+// export const addCounselor = async (req: Request, res: Response): Promise<void> => {
+//     try {
+//       const { name, email, password, phone, specialty, experience, education,location,time, bio, availability } = req.body;
+//       const imageFile = req.file; // Multer handles file uploads
+  
+//       // Validate required fields: name and email
+//       if (!name || !email) {
+//         res.status(400).json({ error: "Name and email are required" });
+//         return;
+//       }
+  
+//       // Check if the counselor already exists
+//       const existingCounselor = await Counselor.findOne({ email });
+//       if (existingCounselor) {
+//         res.status(400).json({ error: "Counselor already exists" });
+//         return;
+//       }
+  
+//       // Hash password if provided
+//       let hashedPassword = null;
+//       if (password) {
+//         hashedPassword = await bcrypt.hash(password, 10);
+//       }
+  
+//       // Store image path if an image is uploaded
+//       const imagePath = imageFile ? path.join("uploads", imageFile.filename) : null;
+  
+//       // Create new counselor
+//       const counselor = new Counselor({
+//         name,
+//         email,
+//         password: hashedPassword,
+//         phone,
+//         specialty,
+//         experience,
+//         education,
+//         location,
+//         time,
+//         bio,
+//         image: imagePath,
+//         availability: availability || [],
+//       });
+  
+//       await counselor.save();
+  
+//       res.status(201).json({ message: "Counselor added successfully", counselor });
+//     } catch (error) {
+//       res.status(500).json({ error: "Server error", details: (error as Error).message });
+//     }
+//   };
+
 export const addCounselor = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { name, email, password, phone, specialty, experience, education,location,time, bio, availability } = req.body;
-      const imageFile = req.file; // Multer handles file uploads
-  
-      // Validate required fields: name and email
-      if (!name || !email) {
-        res.status(400).json({ error: "Name and email are required" });
-        return;
-      }
-  
-      // Check if the counselor already exists
-      const existingCounselor = await Counselor.findOne({ email });
-      if (existingCounselor) {
-        res.status(400).json({ error: "Counselor already exists" });
-        return;
-      }
-  
-      // Hash password if provided
-      let hashedPassword = null;
-      if (password) {
-        hashedPassword = await bcrypt.hash(password, 10);
-      }
-  
-      // Store image path if an image is uploaded
-      const imagePath = imageFile ? path.join("uploads", imageFile.filename) : null;
-  
-      // Create new counselor
-      const counselor = new Counselor({
-        name,
-        email,
-        password: hashedPassword,
-        phone,
-        specialty,
-        experience,
-        education,
-        location,
-        time,
-        bio,
-        image: imagePath,
-        availability: availability || [],
-      });
-  
-      await counselor.save();
-  
-      res.status(201).json({ message: "Counselor added successfully", counselor });
-    } catch (error) {
-      res.status(500).json({ error: "Server error", details: (error as Error).message });
+  try {
+    // Log the incoming request to check if the image and data are being passed
+    console.log("Request Body:", req.body);
+    console.log("File Upload:", req.file);
+
+    const { name, email, password, phone, specialty, experience, education, location, time, bio, availability } = req.body;
+    const imageFile = req.file; // Multer handles file uploads
+
+    // Validate required fields
+    if (!name || !email) {
+      res.status(400).json({ error: "Name and email are required" });
+      return;
     }
-  };
+
+    // Check if the counselor already exists
+    const existingCounselor = await Counselor.findOne({ email });
+    if (existingCounselor) {
+      res.status(400).json({ error: "Counselor already exists" });
+      return;
+    }
+
+    // Hash password if provided
+    let hashedPassword = null;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
+    // Store image path if an image is uploaded
+    const imagePath = imageFile ? path.join("uploads", imageFile.filename) : null;
+
+    // Create new counselor
+    const counselor = new Counselor({
+      name,
+      email,
+      password: hashedPassword,
+      phone,
+      specialty,
+      experience,
+      education,
+      location,
+      time,
+      bio,
+      image: imagePath,
+      availability: availability || [],
+    });
+
+    await counselor.save();
+
+    // Log the newly created counselor
+    console.log("New Counselor Created:", counselor);
+
+    res.status(201).json({ message: "Counselor added successfully", counselor });
+  } catch (error) {
+    console.error("Error adding counselor:", error);
+    res.status(500).json({ error: "Server error", details: (error as Error).message });
+  }
+};
 
 export const loginCounselor = async (req: Request, res: Response): Promise<void> => {
     try {
