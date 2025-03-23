@@ -295,21 +295,47 @@ export const updateMentalHealthPost = async (req: AuthenticatedRequest, res: Res
   
   
 // Delete mental health post
+// export const deleteMentalHealthPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+//   try {
+//     const { id } = req.params; // Extract the ID from the request parameters
+
+//     if (!id) {
+//        res.status(400).json({ error: "Post ID is missing" });
+//        return
+//     }
+
+//     // Find the post by ID and delete it
+//     const deletedPost = await Mental.findByIdAndDelete(id);
+
+//     if (!deletedPost) {
+//        res.status(404).json({ error: "Mental health post not found" });
+//        return
+//     }
+
+//     res.status(200).json({ message: "Post deleted successfully" });
+//   } catch (error) {
+//     console.error("Error deleting post:", error);
+//     res.status(500).json({ error: "Server error", details: (error as Error).message });
+//   }
+// };
+
 export const deleteMentalHealthPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params; // Extract the ID from the request parameters
+    const { id } = req.params;  // Extract the ID from the request parameters
+
+    console.log("Received Post ID:", id);  // Debugging the ID
 
     if (!id) {
-       res.status(400).json({ error: "Post ID is missing" });
-       return
+      res.status(400).json({ error: "Post ID is missing" });
+      return;
     }
 
     // Find the post by ID and delete it
     const deletedPost = await Mental.findByIdAndDelete(id);
 
     if (!deletedPost) {
-       res.status(404).json({ error: "Mental health post not found" });
-       return
+      res.status(404).json({ error: "Mental health post not found" });
+      return;
     }
 
     res.status(200).json({ message: "Post deleted successfully" });

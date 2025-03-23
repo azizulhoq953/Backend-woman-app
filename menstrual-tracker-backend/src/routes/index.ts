@@ -3,7 +3,7 @@ import express from "express";
 import { authMiddleware, adminMiddleware, authenticateAdmin } from "../middlewares/auth.middleware";
 import { register, login, getProfile} from "../controllers/authController";
 import {getFollowing, getFollowers, followUser} from "../controllers/follower.controllers";
-import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdmin, changeAdminPassword, getAllOrders, removeCategory  } from "../controllers/adminController";
+import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdmin, changeAdminPassword, removeCategory, deleteProduct, getAllOrders, deleteOrder  } from "../controllers/adminController";
 import { addComment, createPost, followPost, getAllPosts, getComments, getPostFollowers, getPostsByCategory, getSavedPosts, savePost, searchPostsByCategory, toggleLikePost } from "../controllers/post.controller";
 import { addToCart, getCart } from "../controllers/addtocart";
 import { placeOrder } from "../controllers/order.controller";
@@ -42,9 +42,12 @@ router.get("/users/getProfile", authMiddleware,getProfile);
 router.post("/orders", authMiddleware, addToCart);
 router.get("/users/order",authMiddleware,getCart)
 router.get("/admin/all-orders",getAllOrders)
+router.delete("/admin/remove-order/:id",deleteOrder)
 router.get("/admin/mental", getMentalHealthPosts);
-router.delete("/admin/mental/:postId", deleteMentalHealthPost);
-router.get("/admin/:id", authMiddleware,upload.single('image'), getMentalHealthPostById);
+// router.delete("/admin/mental/:id", deleteMentalHealthPost);
+router.delete("/admin/mental/:id", deleteMentalHealthPost);
+
+router.get("/admin/:id", authMiddleware, getMentalHealthPostById);
 // router.post("/order", authMiddleware, placeOrder);
 // router.put("/users/updateprofile", authMiddleware, uploadProfileImage.single('profileImage'), updateProfile)
 
@@ -94,8 +97,9 @@ router.delete("/admin/post/:id", authMiddleware, adminMiddleware, DeletePost);
 
 //products
 
-router.post("/admin/addProduct", authMiddleware, uploadProductImages.array('image', 10), addProductHandler);
-router.get("/allproducts", authMiddleware, getAllProducts);
+router.post("/admin/addProduct", authMiddleware,upload.array('images'), addProductHandler);
+router.delete("/admin/product/:id", deleteProduct); 
+router.get("/allproducts", getAllProducts);
 router.get("/products/:id", authMiddleware, getProductById);
 router.get("/allcategory", getAllCategories);
 router.get("/category/:categoryId", authMiddleware, getCategoryById);
@@ -126,7 +130,7 @@ router.post("/admin/add", upload.single("image"), authenticateAdmin,addCounselor
 router.post("/counseller/login", loginCounselor)
 router.get("/all", getAllCounselors); // Get all counselors
 router.get("/:id", getCounselorById); // Get counselor by ID
-router.delete("/:id", deleteCounselor); // Admin deletes counselor
+router.delete("/admin/counselor/:id", deleteCounselor);
 router.put("/update/:id",authMiddleware, updateCounselor); // Admin deletes counselor
 router.put("/password/:id", updateCounselorPassword); // Admin deletes counselor
 

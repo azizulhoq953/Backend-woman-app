@@ -84,39 +84,93 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
   }
 };
 
+// export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { name, category, description, price } = req.body;
+//     const images = req.files as Express.Multer.File[];
+
+//     // Validate all fields are provided
+//     if (!name || !category || !description || !price || !images || images.length === 0) {
+//        res.status(400).json({ error: "All fields are required" });
+//        return
+//     }
+
+//     // Process images to get their URLs
+//     const imageUrls = images.map(image => path.join('uploads', image.filename));
+
+//     // Create new product
+//     const product = new Product({
+//       name,
+//       category,
+//       description,
+//       price,
+//       images: imageUrls,
+//     });
+
+//     await product.save(); // Save the product to the database
+
+//     res.status(201).json({ message: "Product added successfully", product });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
+
 export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, category, description, price } = req.body;
     const images = req.files as Express.Multer.File[];
 
-    // Validate all fields are provided
+    // Validate required fields
     if (!name || !category || !description || !price || !images || images.length === 0) {
-       res.status(400).json({ error: "All fields are required" });
-       return
+      res.status(400).json({ error: "All fields are required" });
+      return;
+    }
+
+    // Ensure price is a number
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice)) {
+      res.status(400).json({ error: "Price must be a valid number" });
+      return;
     }
 
     // Process images to get their URLs
     const imageUrls = images.map(image => path.join('uploads', image.filename));
 
-    // Create new product
+    // Create new product object
     const product = new Product({
       name,
       category,
       description,
-      price,
-      images: imageUrls,
+      price: parsedPrice, // Use the parsed price to ensure it's a valid number
+      images: imageUrls,   // Store images as file URLs
     });
 
-    await product.save(); // Save the product to the database
+    // Save the product to the database
+    await product.save();
 
     res.status(201).json({ message: "Product added successfully", product });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
+    console.error("Error adding product:", error);
+    res.status(500).json({ error: "Server error while adding product", details: error });
   }
 };
+export const deleteProduct = async (req: Request, res: Response): Promise<void> => {
+  const productId = req.params.id;  // Get the product ID from the request parameters
 
+  try {
+    const product = await Product.findByIdAndDelete(productId);  // Find and delete the product
 
+    if (!product) {
+       res.status(404).json({ error: "Product not found" });
+       return
+    }
+
+    res.status(200).json({ message: "Product removed successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Server error", details: (error as Error).message });
+  }
+};
 
 // export const createAdmin = async (req: Request, res: Response): Promise<void> => {
 //   try {
@@ -455,8 +509,8 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
   try {
       // ✅ Fetch all orders with user and product details
       const orders = await Order.find()
-          .populate("userId", "name email phone note") // Get user details
-          .populate("products.productId", "name price image"); // Get product details
+          .populate("userId", "name email phone bkashNumber nagadNumber transactionId note") // Get user details
+          .populate("products.productId", "name price "); // Get product details
 
       if (!orders || orders.length === 0) {
           res.status(404).json({ error: "No orders found" });
@@ -469,3 +523,23 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
       res.status(500).json({ error: "Server error", details: error});
   }
 };
+
+export const deleteOrder = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // Find the order by its ID and remove it
+    const order = await Order.findByIdAndDelete(id);
+
+    if (!order) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    res.status(200).json({ message: "Order deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting order:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
