@@ -110,8 +110,8 @@ router.get("/partner/profile/:userId", getPartnerProfile);
 
 //followers users
 
-router.post("/users/follow/:userId", followUser); 
-router.get("/users/followers/:userId", getFollowers); 
+router.post("/users/follow/:userId", authMiddleware,followUser); 
+router.get("/users/followers/:userId",getFollowers); 
 router.get("/users/following/:userId", getFollowing); 
 
 
