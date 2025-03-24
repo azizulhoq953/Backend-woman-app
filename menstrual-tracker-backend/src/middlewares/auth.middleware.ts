@@ -59,6 +59,9 @@ declare module "express-serve-static-core" {
     }
 }
 
+export interface AuthRequest extends Request {
+    user?: { id: string; role: string };
+  }
 // Middleware to authenticate users
 // export const authMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 //     try {
@@ -135,10 +138,6 @@ export const adminMiddleware = async (req: Request, res: Response, next: NextFun
 };
 
 
-
-interface AuthRequest extends Request {
-    user?: { id: string; role: string };
-  }
 
 export const authenticateAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
     const token = req.header("Authorization")?.split(" ")[1]; // Extract token

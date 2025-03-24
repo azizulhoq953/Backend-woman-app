@@ -147,7 +147,7 @@ export const createMentalHealthPost = async (req: AuthenticatedRequest, res: Res
       title,
       category: categoryExists._id,  // Ensure the category is linked by _id
       description,
-      image: imagePath,
+      image: imagePath,  // Save full path including extension
     });
 
     await mentalPost.save();
@@ -160,6 +160,47 @@ export const createMentalHealthPost = async (req: AuthenticatedRequest, res: Res
 
 
 
+
+// export const getMentalHealthPosts = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     // Fetch all posts and populate the category field
+//     const mentalHealthPosts = await Mental.find().populate("category");
+
+//     if (!mentalHealthPosts || mentalHealthPosts.length === 0) {
+//       res.status(404).json({ error: "No mental health posts found" });
+//       return;
+//     }
+
+//     // Construct full image URLs
+//     const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+//     const formattedPosts = mentalHealthPosts.map(post => {
+//       let imageUrl = '';
+//       if (post.image) {
+//         // Ensure the image field contains the correct file name with extension
+//         imageUrl = `${baseUrl}/uploads/${post.image}`;
+//       }
+
+//       return {
+//         description: post.description || "No description provided", // Assuming there's a description field
+//         image: post.image || "", // Image path stored in the database, including extension
+//         likes: post.likes || [], // Assuming this is an array of likes
+//         comments: post.comments || [], // Assuming this is an array of comments
+//         followers: post.followers || [], // Assuming this is an array of followers
+//         createdAt: post.createdAt || "", // Date when the post was created
+//         updatedAt: post.updatedAt || "", // Date when the post was last updated
+//         categoryName: post.category ? post.category.name : "Unknown", // Category name
+//         imageUrl: imageUrl, // Full image URL constructed, including the file extension
+//       };
+//     });
+
+//     res.status(200).json({ posts: formattedPosts });
+//   } catch (error) {
+//     console.error("Error in getMentalHealthPosts:", error);
+//     res.status(500).json({ error: "Server error", details: (error as Error).message });
+//   }
+// };
+
 export const getMentalHealthPosts = async (req: Request, res: Response): Promise<void> => {
   try {
     // Fetch all posts and populate the category field
@@ -170,26 +211,29 @@ export const getMentalHealthPosts = async (req: Request, res: Response): Promise
       return;
     }
 
-    // Construct full image URLs
+    // Construct the base URL correctly
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
+    // Format the posts for the response
     const formattedPosts = mentalHealthPosts.map(post => {
       let imageUrl = '';
       if (post.image) {
-        // Ensure the image field contains the correct file name with extension
-        imageUrl = `${baseUrl}/uploads/${post.image}`;
+        // Ensure the image path is correctly concatenated without repeating `/uploads/`
+        imageUrl = `${baseUrl}/uploads/${post.image}`; // Only one `/uploads/` here
       }
 
       return {
-        description: post.description || "No description provided", // Assuming there's a description field
-        image: post.image || "", // Image path stored in the database, including extension
-        likes: post.likes || [], // Assuming this is an array of likes
-        comments: post.comments || [], // Assuming this is an array of comments
-        followers: post.followers || [], // Assuming this is an array of followers
-        createdAt: post.createdAt || "", // Date when the post was created
-        updatedAt: post.updatedAt || "", // Date when the post was last updated
-        categoryName: post.category ? post.category.name : "Unknown", // Category name
-        imageUrl: imageUrl, // Full image URL constructed, including the file extension
+        _id: post._id, 
+        title: post.title,
+        description: post.description || "No description provided", 
+        image: post.image || "", 
+        likes: post.likes || [],
+        comments: post.comments || [],
+        followers: post.followers || [],
+        createdAt: post.createdAt || "",
+        updatedAt: post.updatedAt || "",
+        categoryName: post.category ? post.category.name : "Unknown", 
+        imageUrl: imageUrl, // The correctly formatted image URL
       };
     });
 
@@ -200,11 +244,6 @@ export const getMentalHealthPosts = async (req: Request, res: Response): Promise
   }
 };
 
-
-
-
-  
-  
 
 export const getMentalHealthPostById = async (req: Request, res: Response): Promise<void> => {
     try {
