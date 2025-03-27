@@ -8,7 +8,7 @@ interface Iadmin extends Document {
   title: string;
   category: ICategory; // Category should now be typed as ICategory
   description: string;
-  image?: string;
+  image?: any;
   likes: Types.ObjectId[];
   comments: { userId: Types.ObjectId; commentText: string }[];
   followers: Types.ObjectId[];
@@ -22,7 +22,7 @@ const AdminPostSchema = new Schema<Iadmin>(
     title: { type: String, required: true },
     category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
     description: { type: String, required: true },
-    image: { type: String },
+    image: { type: Array },
     likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
     comments: [
       {

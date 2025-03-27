@@ -14,192 +14,127 @@ import fs from 'fs';
 // export const createMentalHealthPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
 //   try {
 //     const { title, category, description } = req.body;
-    
-//     // Validate required fields
+
 //     if (!title || !category || !description) {
-//       res.status(400).json({ error: "All fields (title, category, description) are required" });
-//       return;
+//        res.status(400).json({ error: "All fields (title, category, description) are required" });
+//        return;
 //     }
 
-//     // Check if the user is authorized
 //     if (!req.user) {
-//       res.status(401).json({ error: "Unauthorized" });
-//       return;
+//        res.status(401).json({ error: "Unauthorized" });
+//        return;
 //     }
 
-//     // Handle file upload - get the file path if an image was uploaded
 //     let imagePath = '';
 //     if (req.file) {
-//       // Get the file's original path
-//       imagePath = req.file.path.replace(/\\/g, '/');
-      
-//       // Log file information for debugging
-//       console.log("File details:", {
-//         originalname: req.file.originalname,
-//         filename: req.file.filename,
-//         mimetype: req.file.mimetype,
-//         path: req.file.path
-//       });
-      
-//       // Check if the path already has an extension
-//       if (!path.extname(imagePath)) {
-//         // Determine extension from mimetype
-//         const mimeTypeMap: Record<string, string> = {
-//           'image/jpeg': '.jpg',
-//           'image/png': '.png',
-//           'image/gif': '.gif',
-//           'image/webp': '.webp'
-//         };
-        
-//         const extension = mimeTypeMap[req.file.mimetype] || '.jpg';
-        
-//         // Add extension to the path
-//         const newPath = `${imagePath}${extension}`;
-        
-//         // Rename the actual file on disk
-//         fs.renameSync(imagePath, newPath);
-        
-//         // Update the path
-//         imagePath = newPath;
-//         console.log("Updated path with extension:", imagePath);
-//       }
-//     }
-
-//     // Find the category by name
-//     const categoryExists = await Category.findOne({ name: category });
-
-//     if (!categoryExists) {
-//       res.status(400).json({ error: "Category not found" });
+//       imagePath = req.file.path.replace(/\\/g, '/'); // Fix Windows path issues
 //       return;
 //     }
 
-//     // Create the new post using the Mental model
+//     const categoryExists = await Category.findById(category);
+//     if (!categoryExists) {
+//        res.status(400).json({ error: "Category not found" });
+//        return;
+//     }
+
 //     const mentalPost = new Mental({
-//       userId: new Types.ObjectId(req.user.id),
+//       userId: req.user.id,
 //       title,
 //       category: categoryExists._id,
 //       description,
 //       image: imagePath,
-//       likes: [],
-//       comments: [],
-//       followers: []
 //     });
 
-//     // Save the post to the database
 //     await mentalPost.save();
 
-//     // Fetch the post with populated category details
-//     const populatedPost = await Mental.findById(mentalPost._id)
-//       .populate("category")
-//       .populate("userId", "name email");
-
-//     // Construct image URL
 //     const baseUrl = `${req.protocol}://${req.get('host')}`;
 //     const imageUrl = imagePath ? `${baseUrl}/${imagePath}` : '';
 
-//     if (populatedPost && populatedPost.category) {
-//       res.status(201).json({
-//         message: "Post created successfully",
-//         post: {
-//           ...populatedPost.toObject(),
-//           categoryName: (populatedPost.category as any).name,
-//           imageUrl: imageUrl
-//         },
-//       });
-//     } else {
-//       res.status(500).json({ error: "Failed to populate category" });
-//     }
+//     res.status(201).json({
+//       message: "Mental Health Post created successfully",
+//       post: { ...mentalPost.toObject(), imageUrl },
+//     });
 //   } catch (error) {
-//     console.error("Error in createMentalHealthPost:", error);
 //     res.status(500).json({ error: "Server error", details: (error as Error).message });
 //   }
 // };
-// Example backend method (already provided in your code)
+
 export const createMentalHealthPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { title, category, description } = req.body;
-    
+
+    // Validate input fields
     if (!title || !category || !description) {
       res.status(400).json({ error: "All fields (title, category, description) are required" });
       return;
     }
 
+    // Check user authentication
     if (!req.user) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
 
-    // File handling
-    let imagePath = '';
-    if (req.file) {
-      imagePath = req.file.path.replace(/\\/g, '/');
+    // Handle image upload
+    let imagePaths: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      // Extract the paths for all uploaded images
+      imagePaths = (req.files as Express.Multer.File[]).map(file => {
+        // Convert Windows backslashes to forward slashes and make path relative
+        return file.path
+          .replace(/\\/g, '/')
+          .replace(/^.*uploads\//, 'uploads/');
+      });
+      console.log("Processed image paths:", imagePaths);
     }
 
-    const categoryExists = await Category.findById(category);
+    // Verify category
+     let categoryExists: ICategory | null = null;
+        if (Types.ObjectId.isValid(category)) {
+          categoryExists = await Category.findById(category);
+        }
+    
+        if (!categoryExists) {
+          categoryExists = await Category.findOne({ name: category });
+        }
+    
+        if (!categoryExists) {
+          res.status(400).json({ error: "Category not found" });
+          return;
+        }
 
-    if (!categoryExists) {
-      res.status(400).json({ error: "Category not found" });
-      return;
-    }
-
+    // Create mental health post
     const mentalPost = new Mental({
       userId: req.user.id,
       title,
-      category: categoryExists._id,  // Ensure the category is linked by _id
+      category: categoryExists._id,
       description,
-      image: imagePath,  // Save full path including extension
+      image: imagePaths,
     });
 
     await mentalPost.save();
 
-    res.status(201).json({ message: "Mental Health Post created successfully", post: mentalPost });
+    // Generate image URL
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const imageUrls = imagePaths.map(imagePath => `${baseUrl}/${imagePath}`);
+
+    // Respond with success
+    res.status(201).json({
+      message: "Mental Health Post created successfully",
+      post: { 
+        ...mentalPost.toObject(), 
+        categoryName: categoryExists.name,
+        imageUrls,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: "Server error", details: (error as Error).message });
+    console.error("Create mental health post error:", error);
+    res.status(500).json({ 
+      error: "Server error", 
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 };
-
-
-
-
-// export const getMentalHealthPosts = async (req: Request, res: Response): Promise<void> => {
-//   try {
-//     // Fetch all posts and populate the category field
-//     const mentalHealthPosts = await Mental.find().populate("category");
-
-//     if (!mentalHealthPosts || mentalHealthPosts.length === 0) {
-//       res.status(404).json({ error: "No mental health posts found" });
-//       return;
-//     }
-
-//     // Construct full image URLs
-//     const baseUrl = `${req.protocol}://${req.get('host')}`;
-
-//     const formattedPosts = mentalHealthPosts.map(post => {
-//       let imageUrl = '';
-//       if (post.image) {
-//         // Ensure the image field contains the correct file name with extension
-//         imageUrl = `${baseUrl}/uploads/${post.image}`;
-//       }
-
-//       return {
-//         description: post.description || "No description provided", // Assuming there's a description field
-//         image: post.image || "", // Image path stored in the database, including extension
-//         likes: post.likes || [], // Assuming this is an array of likes
-//         comments: post.comments || [], // Assuming this is an array of comments
-//         followers: post.followers || [], // Assuming this is an array of followers
-//         createdAt: post.createdAt || "", // Date when the post was created
-//         updatedAt: post.updatedAt || "", // Date when the post was last updated
-//         categoryName: post.category ? post.category.name : "Unknown", // Category name
-//         imageUrl: imageUrl, // Full image URL constructed, including the file extension
-//       };
-//     });
-
-//     res.status(200).json({ posts: formattedPosts });
-//   } catch (error) {
-//     console.error("Error in getMentalHealthPosts:", error);
-//     res.status(500).json({ error: "Server error", details: (error as Error).message });
-//   }
-// };
 
 export const getMentalHealthPosts = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -216,24 +151,31 @@ export const getMentalHealthPosts = async (req: Request, res: Response): Promise
 
     // Format the posts for the response
     const formattedPosts = mentalHealthPosts.map(post => {
-      let imageUrl = '';
-      if (post.image) {
-        // Ensure the image path is correctly concatenated without repeating `/uploads/`
-        imageUrl = `${baseUrl}/uploads/${post.image}`; // Only one `/uploads/` here
+      let imageUrls: string[] = [];
+      
+      if (Array.isArray(post.image)) {
+        // If post.image is an array, iterate over it and construct image URLs
+        imageUrls = post.image.map(imagePath => {
+          // Only append 'uploads/' if it's not already present in the image path
+          return imagePath.startsWith('uploads/') ? `${baseUrl}/${imagePath}` : `${baseUrl}/uploads/${imagePath}`;
+        });
+      } else if (typeof post.image === 'string') {
+        // If it's a single image string, handle that
+        imageUrls = [post.image.startsWith('uploads/') ? `${baseUrl}/${post.image}` : `${baseUrl}/uploads/${post.image}`];
       }
 
       return {
-        _id: post._id, 
+        _id: post._id,
         title: post.title,
-        description: post.description || "No description provided", 
-        image: post.image || "", 
+        description: post.description || "No description provided",
+        image: post.image || "",
         likes: post.likes || [],
         comments: post.comments || [],
         followers: post.followers || [],
         createdAt: post.createdAt || "",
         updatedAt: post.updatedAt || "",
-        categoryName: post.category ? post.category.name : "Unknown", 
-        imageUrl: imageUrl, // The correctly formatted image URL
+        categoryName: post.category ? post.category.name : "Unknown",
+        imageUrls: imageUrls,  // The array of formatted image URLs
       };
     });
 
@@ -384,8 +326,6 @@ export const deleteMentalHealthPost = async (req: AuthenticatedRequest, res: Res
   }
 };
 
-  
-
   export const PostAdmin = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { title, category, description } = req.body;
@@ -454,7 +394,6 @@ export const deleteMentalHealthPost = async (req: AuthenticatedRequest, res: Res
       res.status(500).json({ error: "Server error", details: (error as Error).message });
     }
   };
-
 
   export const GetAllPostsAdmin = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {

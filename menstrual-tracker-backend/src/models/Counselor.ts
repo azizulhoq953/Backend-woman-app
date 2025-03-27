@@ -11,7 +11,7 @@ export interface ICounselor extends Document {
   location: string;
   time: Date;
   bio: string;
-  image: string;
+  image: any;
   availability: string[];
   ratings: number;
 }
@@ -28,7 +28,7 @@ const CounselorSchema: Schema = new Schema(
     location: {type: String, required: false},
     time: {type: Date, required:false},
     bio: { type: String, required: false },
-    image: { type: String, required: false }, // Store image URL
+    image: { type: Array }, // Store image URL
     availability: { type: [String], default: [] }, // Available days
     ratings: { type: Number, default: 0 }, // Default rating 0
   },

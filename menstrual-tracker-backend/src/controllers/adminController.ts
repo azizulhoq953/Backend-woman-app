@@ -84,35 +84,41 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
   }
 };
 
+
+
 // export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
 //   try {
 //     const { name, category, description, price } = req.body;
 //     const images = req.files as Express.Multer.File[];
 
-//     // Validate all fields are provided
 //     if (!name || !category || !description || !price || !images || images.length === 0) {
 //        res.status(400).json({ error: "All fields are required" });
 //        return
 //     }
 
-//     // Process images to get their URLs
-//     const imageUrls = images.map(image => path.join('uploads', image.filename));
+//     const parsedPrice = parseFloat(price);
+//     if (isNaN(parsedPrice)) {
+//        res.status(400).json({ error: "Price must be a valid number" });
+//        return
+//     }
 
-//     // Create new product
+//     const baseUrl = `${req.protocol}://${req.get('host')}`;
+//     const imageUrls = images.map(image => `${baseUrl}/uploads/PostImage/${image.filename}`);
+
 //     const product = new Product({
 //       name,
 //       category,
 //       description,
-//       price,
+//       price: parsedPrice,
 //       images: imageUrls,
 //     });
 
-//     await product.save(); // Save the product to the database
+//     await product.save();
 
 //     res.status(201).json({ message: "Product added successfully", product });
 //   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: "Server error" });
+//     console.error("Error adding product:", error);
+//     res.status(500).json({ error: "Server error while adding product", details: error });
 //   }
 // };
 
@@ -121,41 +127,58 @@ export const addProductHandler = async (req: Request, res: Response): Promise<vo
     const { name, category, description, price } = req.body;
     const images = req.files as Express.Multer.File[];
 
-    // Validate required fields
-    if (!name || !category || !description || !price || !images || images.length === 0) {
+    // Validation checks
+    if (!name || !category || !description || !price) {
       res.status(400).json({ error: "All fields are required" });
       return;
     }
 
-    // Ensure price is a number
-    const parsedPrice = parseFloat(price);
-    if (isNaN(parsedPrice)) {
-      res.status(400).json({ error: "Price must be a valid number" });
+    if (!images || images.length === 0) {
+      res.status(400).json({ error: "At least one image is required" });
       return;
     }
 
-    // Process images to get their URLs
-    const imageUrls = images.map(image => path.join('uploads', image.filename));
+    // Price validation
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      res.status(400).json({ error: "Price must be a valid positive number" });
+      return;
+    }
 
-    // Create new product object
+    // Generate image URLs
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const imageUrls = images.map(image => 
+      `${baseUrl}/uploads/${image.filename}`.replace(/\\/g, '/')
+    );
+
+    // Create and save product
     const product = new Product({
       name,
       category,
       description,
-      price: parsedPrice, // Use the parsed price to ensure it's a valid number
-      images: imageUrls,   // Store images as file URLs
+      price: parsedPrice,
+      images: imageUrls,
     });
 
-    // Save the product to the database
     await product.save();
 
-    res.status(201).json({ message: "Product added successfully", product });
+    // Respond with success
+    res.status(201).json({ 
+      message: "Product added successfully", 
+      product 
+    });
   } catch (error) {
     console.error("Error adding product:", error);
-    res.status(500).json({ error: "Server error while adding product", details: error });
+    res.status(500).json({ 
+      error: "Server error while adding product", 
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 };
+
+
 export const deleteProduct = async (req: Request, res: Response): Promise<void> => {
+  
   const productId = req.params.id;  // Get the product ID from the request parameters
 
   try {

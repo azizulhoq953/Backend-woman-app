@@ -1,12 +1,27 @@
-{
-    "compilerOptions": {
-      "target": "es2017",
-      "esModuleInterop": true,
-      "module": "commonjs",
-      "strict": true,
-      "outDir": "./dist",
-      "rootDir": "./src",
-      "resolveJsonModule": true
-    }
-  }
+// {
+//     "compilerOptions": {
+//       "target": "es2017",
+//       "esModuleInterop": true,
+//       "module": "commonjs",
+//       "strict": true,
+//       "outDir": "./dist",
+//       "rootDir": "./src",
+//       "resolveJsonModule": true
+//     }
+//   }
   
+{
+  "compilerOptions": {
+    "module": "NodeNext", // or "Node16"
+    "moduleResolution": "NodeNext", // or "Node16"
+    "esModuleInterop": true,
+    "target": "ES2020",
+    "strict": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}

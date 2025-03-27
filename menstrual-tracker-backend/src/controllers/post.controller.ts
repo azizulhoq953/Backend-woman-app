@@ -1,161 +1,189 @@
 import { Request, Response } from "express";
 import Post from "../models/Post";
 import { Types } from "mongoose"; // Import Types for ObjectId
-import Category from "../models/category.model"; // Ensure correct import path
+import Category, { ICategory } from "../models/category.model"; // Ensure correct import path
 import User from "../models/User";
-
+import path from "path";
+import fs from "fs";
 interface AuthenticatedRequest extends Request {
     user?: { id: string };
 }
 
 
+
+
 // export const createPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
 //     try {
 //       const { title, category, description } = req.body;
-      
-//       // Validate required fields
+  
 //       if (!title || !category || !description) {
-//         res.status(400).json({ error: "All fields (title, category, description) are required" });
-//         return;
-//       }
-      
-//       // Check if the user is authorized
+//          res.status(400).json({ error: "All fields (title, category, description) are required" });
+//          return;
+//         }
+  
 //       if (!req.user) {
-//         res.status(401).json({ error: "Unauthorized" });
-//         return;
+//          res.status(401).json({ error: "Unauthorized" });
+//          return;
 //       }
-      
-//       // Handle file upload - get the file path if an image was uploaded
-//       let imagePath = '';
-//       if (req.file) {
-//         imagePath = req.file.path;
+  
+//       // Handle the image uploads (multiple images)
+//       let imagePaths: string[] = [];
+//       if (req.files && Array.isArray(req.files)) {
+//         // Log the uploaded files for debugging
+//         console.log("Uploaded files:", req.files);
+  
+//         // Extract the paths for all uploaded images
+//         imagePaths = (req.files as Express.Multer.File[]).map(file => file.path.replace(/\\/g, '/'));  // Normalize path
+//         console.log("Image paths:", imagePaths);  // Log the image paths
+//       } else {
+//         console.log("No files uploaded");
 //       }
-      
-//       // Find the category by ID or name
-//       const categoryExists = await Category.findOne({ 
-//         $or: [
-//           { _id: Types.ObjectId.isValid(category) ? category : null },
-//           { name: category }
-//         ]
-//       });
-      
+  
+//       // Check if the category exists
+//       let categoryExists: ICategory | null = null;
+//       if (Types.ObjectId.isValid(category)) {
+//         categoryExists = await Category.findById(category);
+//       }
+  
 //       if (!categoryExists) {
-//         res.status(400).json({ error: "Category not found" });
-//         return;
+//         categoryExists = await Category.findOne({ name: category });
 //       }
-      
-//       // Create the new post
+  
+//       if (!categoryExists) {
+//          res.status(400).json({ error: "Category not found" });
+//          return;
+//       }
+  
+//       // Create the post with the image paths
 //       const post = new Post({
-//         userId: new Types.ObjectId(req.user.id),
+//         userId: req.user.id,
 //         title,
 //         category: categoryExists._id,
 //         description,
-//         image: imagePath,
-//         likes: [],
-//         comments: [],
-//         followers: []
+//         images: imagePaths,  // Save the array of image paths to the post object
 //       });
-      
-//       // Save the post to the database
+  
 //       await post.save();
-      
-//       // Fetch the post with populated category details
+  
+//       // Populate the post with category data
 //       const populatedPost = await Post.findById(post._id).populate("category");
-      
-//       // Construct image URL
-//       const baseUrl = `${req.protocol}://${req.get('host')}`;
-//       const imageUrl = imagePath ? `${baseUrl}/${imagePath}` : '';
-      
-//       if (populatedPost && populatedPost.category) {
-//         res.status(201).json({
-//           message: "Post created successfully",
-//           post: {
-//             ...populatedPost.toObject(),
-//             categoryName: (populatedPost.category as any).name,
-//             imageUrl: imageUrl
-//           },
-//         });
-//       } else {
-//         res.status(500).json({ error: "Failed to populate category" });
+  
+//       // Handle the case where the post could not be populated
+//       if (!populatedPost) {
+//          res.status(500).json({ error: "Failed to populate post" });
+//          return;
 //       }
+  
+//       // Construct the full image URLs
+//     //   const baseUrl = `${req.protocol}://${req.get('host')}`;
+//     //   const imageUrls = imagePaths.map(imagePath => `${baseUrl}/${imagePath}`);
+//     const baseUrl = `${req.protocol}://${req.get('host')}`;
+//     const imageUrls = imagePaths ? `${baseUrl}/uploads/PostImage/${imagePaths}` : '';
+
+  
+//       // Send the response with the image URLs
+//       res.status(201).json({
+//         message: "Post created successfully",
+//         post: {
+//           ...populatedPost.toObject(),
+//           categoryName: populatedPost.category.name,
+//           imageUrls,  // Include the image URLs in the response
+//         },
+//       });
 //     } catch (error) {
+//       console.error("Error creating post:", error);
 //       res.status(500).json({ error: "Server error", details: (error as Error).message });
 //     }
 //   };
-
+  
 export const createPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { title, category, description } = req.body;
-      
-      // Validate required fields
+  
       if (!title || !category || !description) {
         res.status(400).json({ error: "All fields (title, category, description) are required" });
         return;
       }
-      
-      // Check if the user is authorized
+  
       if (!req.user) {
         res.status(401).json({ error: "Unauthorized" });
         return;
       }
-      
-      // Handle file upload - get the file path if an image was uploaded
-      let imagePath = '';
-      if (req.file) {
-        imagePath = req.file.path;
+  
+      // Handle the file uploads
+      let imagePaths: string[] = [];
+      if (req.files && Array.isArray(req.files)) {
+        // Extract the paths for all uploaded images
+        imagePaths = (req.files as Express.Multer.File[]).map(file => {
+          // Convert Windows backslashes to forward slashes and make path relative
+          return file.path
+            .replace(/\\/g, '/')
+            .replace(/^.*uploads\//, 'uploads/');
+        });
+        console.log("Processed image paths:", imagePaths);
       }
-      
-      // Find the category by ID or name
-      const categoryExists = await Category.findOne({ 
-        $or: [
-          { _id: Types.ObjectId.isValid(category) ? category : null },
-          { name: category }
-        ]
-      });
-      
+  
+      // Check if the category exists
+      let categoryExists: ICategory | null = null;
+      if (Types.ObjectId.isValid(category)) {
+        categoryExists = await Category.findById(category);
+      }
+  
+      if (!categoryExists) {
+        categoryExists = await Category.findOne({ name: category });
+      }
+  
       if (!categoryExists) {
         res.status(400).json({ error: "Category not found" });
         return;
       }
-      
-      // Create the new post
+  
+      // Create the post with the image paths
       const post = new Post({
-        userId: new Types.ObjectId(req.user.id),
+        userId: req.user.id,
         title,
         category: categoryExists._id,
         description,
-        image: imagePath,
-        likes: [],
-        comments: [],
-        followers: []
+        images: imagePaths,
       });
-      
-      // Save the post to the database
+  
+      // Save the post
       await post.save();
-      
-      // Fetch the post with populated category details
+  
+      // Populate the post with category data
       const populatedPost = await Post.findById(post._id).populate("category");
-      
-      // Construct image URL
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const imageUrl = imagePath ? `${baseUrl}/${imagePath}` : '';
-      
-      if (populatedPost && populatedPost.category) {
-        res.status(201).json({
-          message: "Post created successfully",
-          post: {
-            ...populatedPost.toObject(),
-            categoryName: (populatedPost.category as any).name,
-            imageUrl: imageUrl
-          },
-        });
-      } else {
-        res.status(500).json({ error: "Failed to populate category" });
+  
+      if (!populatedPost) {
+        res.status(500).json({ error: "Failed to populate post" });
+        return;
       }
+  
+      // Construct the full image URLs
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const imageUrls = imagePaths.map(imagePath => `${baseUrl}/${imagePath}`);
+  
+      // Send a clear, complete response
+      res.status(201).json({
+        message: "Post created successfully",
+        post: {
+          ...populatedPost.toObject(),
+          categoryName: populatedPost.category.name,
+          imageUrls,
+        },
+      });
+  
     } catch (error) {
-      res.status(500).json({ error: "Server error", details: (error as Error).message });
+      console.error("Error creating post:", error);
+      
+      // More detailed error response
+      res.status(500).json({ 
+        error: "Server error", 
+        details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : null
+      });
     }
   };
+  
 
 export const toggleLikePost = async (req: Request, res: Response): Promise<void> => {
     try {

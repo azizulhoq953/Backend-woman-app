@@ -144,8 +144,19 @@ export const addCounselor = async (req: Request, res: Response): Promise<void> =
     }
 
     // Store image path if an image is uploaded
-    const imagePath = imageFile ? path.join("uploads", imageFile.filename) : null;
+    let imagePaths: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      // Extract the paths for all uploaded images
+      imagePaths = (req.files as Express.Multer.File[]).map(file => {
+        // Convert Windows backslashes to forward slashes and make path relative
+        return file.path
+          .replace(/\\/g, '/')
+          .replace(/^.*uploads\//, 'uploads/');
+      });
+      console.log("Processed image paths:", imagePaths);
+    }
 
+     
     // Create new counselor
     const counselor = new Counselor({
       name,
@@ -158,18 +169,22 @@ export const addCounselor = async (req: Request, res: Response): Promise<void> =
       location,
       time,
       bio,
-      image: imagePath,
+      image: imagePaths,
       availability: availability || [],
     });
 
     await counselor.save();
 
     // Respond with the newly created counselor
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const imageUrls = imagePaths.map(imagePath => `${baseUrl}/${imagePath}`);
+    
+
     res.status(201).json({
       message: "Counselor added successfully",
       counselor: {
         ...counselor.toObject(),
-        imageUrl: imagePath ? `/uploads/${imagePath}` : null,
+        imageUrls,
       },
     });
   } catch (error) {

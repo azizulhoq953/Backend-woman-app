@@ -19,7 +19,7 @@ const uploadProductImages = multer({ dest: 'uploads/PostImage/' });
 const uploadPostImage = multer({ dest: 'uploads//' });
 // import { getNotifications, updateProfile } from "../controllers/notification";
 import { forgetPassword, resetPassword, verifyOtp } from "../controllers/forget";
-import uploadImages, { uploadSingleImage } from "../multer/multer";
+import  { uploadMultipleImages, uploadSingleImage } from "../multer/multer";
 import { createMenstrualHealth, updateMenstrualHealth } from "../controllers/question.controller";
 import { getNotifications } from "../controllers/notification";
 import { addCounselor, deleteCounselor, getAllCounselors, getCounselorById, loginCounselor, updateCounselor, updateCounselorPassword } from "../controllers/counseller";
@@ -53,7 +53,9 @@ router.get("/admin/:id", authMiddleware, getMentalHealthPostById);
 
 //post
 // router.post("/post", authMiddleware, uploadProductImages.array('image',10),createPost );
-router.post('/post', authMiddleware, uploadSingleImage, createPost);
+router.post("/post", authMiddleware, uploadMultipleImages(), createPost);
+
+
 router.post("/post/follow/:postId", followPost );
 router.post("/post/saved/:postId", authMiddleware,savePost)
 router.get("/post/followers/:postId",getPostFollowers);
@@ -86,18 +88,22 @@ router.post("/admin/create",createAdmin)
 router.post("/admin/login", loginAdmin); 
 router.post("/admin/change-password",authenticateAdmin, changeAdminPassword)
 
-router.post("/admin/post/mental",  authMiddleware, upload.single('image'),createMentalHealthPost); 
+// router.post("/admin/post/mental",  authMiddleware, upload.single('image'),createMentalHealthPost);
+router.post("/admin/post/mental", authMiddleware, adminMiddleware, uploadMultipleImages(), createMentalHealthPost);
+// router.post("/admin/post",authMiddleware,upload.single('image'), PostAdmin);
+router.post("/admin/post", authMiddleware, adminMiddleware, uploadMultipleImages(), PostAdmin);
+
 router.put("/admin/post/:id", authMiddleware,upload.single('image'), updateMentalHealthPost);
-router.post("/admin/post",authMiddleware,upload.single('image'), PostAdmin);
 router.put("/admin/post/:id", authMiddleware, adminMiddleware, upload.single('image'), UpdatePost);
-router.delete("/admin/post/:id", authMiddleware, adminMiddleware, DeletePost);
+router.delete("/admin/post/:postId", authMiddleware, adminMiddleware, DeletePost);
 
 // router.get("/admin/apost", authMiddleware,upload.single('image'), GetAllPostsAdmin);
 
 
 //products
 
-router.post("/admin/addProduct", authMiddleware,upload.array('images'), addProductHandler);
+// router.post("/admin/addProduct", authMiddleware,upload.array('images'), addProductHandler);
+router.post("/admin/addProduct", authMiddleware,uploadMultipleImages(), addProductHandler);
 router.delete("/admin/product/:id", deleteProduct); 
 router.get("/allproducts", getAllProducts);
 router.get("/products/:id", authMiddleware, getProductById);
@@ -126,7 +132,7 @@ router.get("/users/following/:userId", getFollowing);
 
 
 // Routes counseller
-router.post("/admin/add", upload.single("image"), authenticateAdmin,addCounselor); // Admin adds counselor
+router.post("/admin/add", uploadMultipleImages(), authenticateAdmin,addCounselor); // Admin adds counselor
 router.post("/counseller/login", loginCounselor)
 router.get("/all", getAllCounselors); // Get all counselors
 router.get("/:id", getCounselorById); // Get counselor by ID

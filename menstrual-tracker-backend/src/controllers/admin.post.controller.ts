@@ -1,307 +1,145 @@
-// import { Request, Response } from 'express';
-// import { AuthenticatedRequest } from '../types/types'; // Define the AuthenticatedRequest type accordingly
-// import  Apost from '../models/admin.Post'; 
-
-// import { Types } from 'mongoose';
-
-// export const PostAdmin = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-//     try {
-//       const { title, category, description } = req.body;
-      
-//       // Validate required fields
-//       if (!title || !category || !description) {
-//         res.status(400).json({ error: "All fields (title, category, description) are required" });
-//         return;
-//       }
-  
-//       // Check if the user is authorized
-//       if (!req.user) {
-//         res.status(401).json({ error: "Unauthorized" });
-//         return;
-//       }
-  
-//       // Handle file upload - get the file path if an image was uploaded
-//       let imagePath = '';
-//       if (req.file) {
-//         imagePath = req.file.path;
-//       }
-  
-//       // Find the category by name
-//       const categoryExists = await category.findOne({ name: category });
-  
-//       if (!categoryExists) {
-//         res.status(400).json({ error: "Category not found" });
-//         return;
-//       }
-  
-//       // Create the new post
-//       const AdminPost = new Apost({
-//         userId: new Types.ObjectId(req.user.id),
-//         title,
-//         category: categoryExists._id,  // Use category's _id
-//         description,
-//         image: imagePath,
-//         likes: [],
-//         comments: [],
-//         followers: []
-//       });
-  
-//       // Save the post to the database
-//       await AdminPost.save();
-  
-//       // Fetch the post with populated category details
-//       const populatedPost = await Apost.findById(AdminPost._id).populate("category");
-  
-//       // Construct image URL
-//       const baseUrl = `${req.protocol}://${req.get('host')}`;
-//       const imageUrl = imagePath ? `${baseUrl}/${imagePath}` : '';
-  
-//       if (populatedPost && populatedPost.category) {
-//         res.status(201).json({
-//           message: "Post created successfully",
-//           post: {
-//             ...populatedPost.toObject(),
-//             categoryName: (populatedPost.category as any).name,
-//             imageUrl: imageUrl
-//           },
-//         });
-//       } else {
-//         res.status(500).json({ error: "Failed to populate category" });
-//       }
-//     } catch (error) {
-//       res.status(500).json({ error: "Server error", details: (error as Error).message });
-//     }
-//   };
-
-
-//   export const GetAllPostsAdmin = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-//     try {
-//       // Ensure user is authenticated
-//       if (!req.user) {
-//         res.status(401).json({ error: "Unauthorized" });
-//         return;
-//       }
-  
-//       // Pagination parameters
-//       const page = parseInt(req.query.page as string) || 1;
-//       const limit = parseInt(req.query.limit as string) || 10;
-//       const skip = (page - 1) * limit;
-  
-//       // Filter parameters
-//       const categoryFilter = req.query.category ? { 'category': req.query.category } : {};
-//       const titleFilter = req.query.title 
-//         ? { 'title': { $regex: req.query.title as string, $options: 'i' } }
-//         : {};
-  
-//       // Combine filters
-//       const filters = {
-//         ...categoryFilter,
-//         ...titleFilter,
-//         // Filter by the authenticated user's ID
-//         userId: req.user.id
-//       };
-  
-//       // Get total count for pagination
-//       const totalPosts = await Apost.countDocuments(filters);
-//       const totalPages = Math.ceil(totalPosts / limit);
-  
-//       // Fetch posts with pagination, sorting, and population
-//       const posts = await Apost.find(filters)
-//         .sort({ createdAt: -1 })
-//         .skip(skip)
-//         .limit(limit)
-//         .populate('category')
-//         .populate('userId', 'username profilePicture');
-  
-//       // Construct proper URLs for images
-//       const baseUrl = `${req.protocol}://${req.get('host')}`;
-//       const formattedPosts = posts.map(post => {
-//         const postObj = post.toObject();
-        
-//         return {
-//           ...postObj,
-//           categoryName: (post.category as any)?.name || '',
-//           imageUrl: post.image ? `${baseUrl}/${post.image}` : '',
-//         };
-//       });
-  
-//       res.status(200).json({
-//         posts: formattedPosts,
-//         pagination: {
-//           totalPosts,
-//           totalPages,
-//           currentPage: page,
-//           limit
-//         }
-//       });
-//     } catch (error) {
-//       res.status(500).json({ 
-//         error: "Failed to fetch posts", 
-//         details: (error as Error).message 
-//       });
-//     }
-//   };
-
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../types/types';
 import Apost from '../models/admin.Post'; 
 import Category, { ICategory } from '../models/category.model'; // Import the correct Category model
 import { Types } from 'mongoose';
+import path from "path";
 
 
 // export const PostAdmin = async (req: Request, res: Response): Promise<void> => {
 //   try {
 //     const { title, category, description } = req.body;
 
-//     // Validate required fields
 //     if (!title || !category || !description) {
-//       res.status(400).json({ error: "All fields (title, category, description) are required" });
-//       return;
-//     }
+//        res.status(400).json({ error: "All fields (title, category, description) are required" });
+//        return;
+//       }
 
-//     // Check if the user is authorized
 //     if (!req.user) {
 //       res.status(401).json({ error: "Unauthorized" });
 //       return;
 //     }
 
-//     // Handle file upload - get the file path if an image was uploaded
 //     let imagePath = '';
 //     if (req.file) {
 //       imagePath = req.file.path;
 //     }
 
-//     // Find the category by _id (not by name)
-//     const categoryExists = await Category.findById(category); // Use _id to find the category
-
+//     const categoryExists = await Category.findById(category);
 //     if (!categoryExists) {
-//       res.status(400).json({ error: "Category not found" });
-//       return;
-//     }
+//        res.status(400).json({ error: "Category not found" });
+//        return;
+//       }
 
-//     // Create the new post
 //     const AdminPost = new Apost({
-//       userId: new Types.ObjectId(req.user.id),
+//       userId: req.user.id,
 //       title,
-//       category: categoryExists._id,  // Use category's _id
+//       category: categoryExists._id,
 //       description,
 //       image: imagePath,
-//       likes: [],
-//       comments: [],
-//       followers: []
 //     });
 
-//     // Save the post to the database
 //     await AdminPost.save();
 
-//     // Fetch the post with populated category details
-//     const populatedPost = await Apost.findById(AdminPost._id).populate<{ category: ICategory }>("category");
-
-//     // Check if populatedPost is null
-//     if (!populatedPost) {
-//       res.status(404).json({ error: "Post not found" });
-//       return;
-//     }
-
-//     // Construct image URL
-//     const baseUrl = `${req.protocol}://${req.get('host')}`;
-//     const imageUrl = populatedPost.image ? `${baseUrl}/${populatedPost.image}` : '';
+//     const baseUrl = `${req.protocol}://${req.get("host")}`;
+//     const imageUrl = imagePath ? `${baseUrl}/${imagePath}` : "";
 
 //     res.status(201).json({
 //       message: "Post created successfully",
 //       post: {
-//         ...populatedPost.toObject(),
-//         categoryName: populatedPost.category.name,  // Safely access category.name
-//         imageUrl: imageUrl
+//         ...AdminPost.toObject(),
+//         categoryName: categoryExists.name,
+//         imageUrl,
 //       },
 //     });
-//   } catch (error: unknown) {
-//     // Handle error safely
-//     if (error instanceof Error) {
-//       res.status(500).json({ error: "Server error", details: error.message });
-//     } else {
-//       res.status(500).json({ error: "Server error" });
-//     }
+//   } catch (error) {
+//     console.error("Create post error:", error);
+//     res.status(500).json({ error: "Server error", details: error });
 //   }
 // };
 
-
-// Original post creation controller (for reference)
-export const PostAdmin = async (req: Request, res: Response): Promise<void> => {
+export const PostAdmin = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { title, category, description } = req.body;
 
-    // Validate required fields
+    // Validate input fields
     if (!title || !category || !description) {
       res.status(400).json({ error: "All fields (title, category, description) are required" });
       return;
     }
 
-    // Check if the user is authorized
+    // Check user authentication
     if (!req.user) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
 
-    // Handle file upload - get the file path if an image was uploaded
-    let imagePath = '';
-    if (req.file) {
-      imagePath = req.file.path;
+    let imagePaths: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      // Extract the paths for all uploaded images
+      imagePaths = (req.files as Express.Multer.File[]).map(file => {
+        // Convert Windows backslashes to forward slashes and make path relative
+        return file.path
+          .replace(/\\/g, '/')
+          .replace(/^.*uploads\//, 'uploads/');
+      });
+      console.log("Processed image paths:", imagePaths);
     }
 
-    // Find the category by _id (not by name)
-    const categoryExists = await Category.findById(category);
+
+    // Find category by name or ID
+     let categoryExists: ICategory | null = null;
+        if (Types.ObjectId.isValid(category)) {
+          categoryExists = await Category.findById(category);
+        }
+    
+    
+    if (!categoryExists) {
+      categoryExists = await Category.findOne({ name: category });
+    }
 
     if (!categoryExists) {
       res.status(400).json({ error: "Category not found" });
       return;
     }
 
-    // Create the new post
+ 
+    // Create admin post
     const AdminPost = new Apost({
-      userId: new Types.ObjectId(req.user.id),
+      userId: req.user.id,
       title,
       category: categoryExists._id,
       description,
-      image: imagePath,
-      likes: [],
-      comments: [],
-      followers: []
+      image: imagePaths, // Store first image path
     });
 
-    // Save the post to the database
     await AdminPost.save();
-
-    // Fetch the post with populated category details
-    const populatedPost = await Apost.findById(AdminPost._id).populate<{ category: ICategory }>("category");
-
-    // Check if populatedPost is null
+const populatedPost = await Apost.findById(AdminPost._id).populate("category");
+    // Generate image URLs
     if (!populatedPost) {
-      res.status(404).json({ error: "Post not found" });
+      res.status(500).json({ error: "Failed to populate post" });
       return;
     }
-
-    // Construct image URL
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const imageUrl = populatedPost.image ? `${baseUrl}/${populatedPost.image}` : '';
-
+    const imageUrls = imagePaths.map(imagePath => `${baseUrl}/${imagePath}`);
+    // Respond with success
     res.status(201).json({
       message: "Post created successfully",
       post: {
-        ...populatedPost.toObject(),
-        categoryName: populatedPost.category.name,
-        imageUrl: imageUrl
+        ...AdminPost.toObject(),
+        categoryName: categoryExists.name,
+        imageUrls, 
       },
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Create post error:", error);
-    if (error instanceof Error) {
-      res.status(500).json({ error: "Server error", details: error.message });
-    } else {
-      res.status(500).json({ error: "Server error" });
-    }
+    res.status(500).json({ 
+      error: "Server error", 
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 };
+
 
 export const UpdatePost = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -429,6 +267,95 @@ export const UpdatePost = async (req: Request, res: Response): Promise<void> => 
 
 
 // Delete post controller
+// export const DeletePost = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     // Extract and log all request info for debugging
+//     console.log('Delete request method:', req.method);
+//     console.log('Delete request path:', req.path);
+//     console.log('Delete request params:', req.params);
+//     console.log('Delete request user:', req.user);
+
+//     const postId = req.params.id;
+
+//     // Validate that postId exists
+//     if (!postId) {
+//       console.log('Missing postId in params');
+//       res.status(400).json({ error: "Post ID is required" });
+//       return;
+//     }
+
+//     // Validate ObjectId format
+//     if (!Types.ObjectId.isValid(postId)) {
+//       console.log('Invalid ObjectId format:', postId);
+//       res.status(400).json({ error: "Invalid post ID format" });
+//       return;
+//     }
+
+//     // Check if the user is authenticated
+//     if (!req.user) {
+//       res.status(401).json({ error: "Unauthorized" });
+//       return;
+//     }
+
+//     // Find the post first to check existence
+//     let existingPost;
+//     try {
+//       existingPost = await Apost.findById(postId);
+//       console.log('Found post:', existingPost ? 'Yes' : 'No');
+//     } catch (findError) {
+//       console.error('Error finding post:', findError);
+//       res.status(500).json({ error: "Error finding post" });
+//       return;
+//     }
+
+//     if (!existingPost) {
+//       res.status(404).json({ error: "Post not found" });
+//       return;
+//     }
+
+//     // Convert IDs to strings for comparison
+//     const postUserId = existingPost.userId.toString();
+//     const requestUserId = req.user.id.toString();
+
+//     console.log('Post userId:', postUserId);
+//     console.log('Request userId:', requestUserId);
+
+//     // Check if the user is an admin or the post's owner
+//     if (req.user.role !== "admin" && postUserId !== requestUserId) {
+//       res.status(403).json({ error: "Forbidden: You don't have permission to delete this post" });
+//       return;
+//     }
+
+//     // Delete the post
+//     let deletedPost;
+//     try {
+//       deletedPost = await Apost.findByIdAndDelete(postId);
+//       console.log('Post deleted:', deletedPost ? 'Yes' : 'No');
+//     } catch (deleteError) {
+//       console.error('Error deleting post:', deleteError);
+//       res.status(500).json({ error: "Error deleting post" });
+//       return;
+//     }
+
+//     if (!deletedPost) {
+//       res.status(404).json({ error: "Post could not be deleted" });
+//       return;
+//     }
+
+//     res.status(200).json({
+//       message: "Post deleted successfully",
+//       postId: postId
+//     });
+//   } catch (error: unknown) {
+//     console.error("Delete post error:", error);
+//     if (error instanceof Error) {
+//       res.status(500).json({ error: "Server error", details: error.message });
+//     } else {
+//       res.status(500).json({ error: "Server error" });
+//     }
+//   }
+// };
+
 export const DeletePost = async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract and log all request info for debugging
@@ -437,7 +364,7 @@ export const DeletePost = async (req: Request, res: Response): Promise<void> => 
     console.log('Delete request params:', req.params);
     console.log('Delete request user:', req.user);
 
-    const postId = req.params.id;
+    const postId = req.params.postId;  // Corrected to use 'postId'
 
     // Validate that postId exists
     if (!postId) {
