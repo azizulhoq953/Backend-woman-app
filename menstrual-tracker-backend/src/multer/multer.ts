@@ -93,7 +93,7 @@ export const uploadMultipleImages = () => multer({
 }).array("image", 5);  // Allow up to 5 images with the field name 'image'
 
 // For single image upload (not needed if you want to allow multiple images only)
-export const uploadSingleImage = () => multer({
+export const uploadSingleImage = (p0: string) => multer({
   storage: createStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // Max file size 5MB
   fileFilter,

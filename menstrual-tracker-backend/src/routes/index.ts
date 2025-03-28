@@ -1,7 +1,7 @@
 
 import express from "express";
 import { authMiddleware, adminMiddleware, authenticateAdmin } from "../middlewares/auth.middleware";
-import { register, login, getProfile} from "../controllers/authController";
+import { register, login, getProfile, updateProfile} from "../controllers/authController";
 import {getFollowing, getFollowers, followUser} from "../controllers/follower.controllers";
 import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdmin, changeAdminPassword, removeCategory, deleteProduct, getAllOrders, deleteOrder  } from "../controllers/adminController";
 import { addComment, createPost, followPost, getAllPosts, getComments, getPostFollowers, getPostsByCategory, getSavedPosts, savePost, searchPostsByCategory, toggleLikePost } from "../controllers/post.controller";
@@ -49,7 +49,7 @@ router.delete("/admin/mental/:id", deleteMentalHealthPost);
 
 router.get("/admin/:id", authMiddleware, getMentalHealthPostById);
 // router.post("/order", authMiddleware, placeOrder);
-// router.put("/users/updateprofile", authMiddleware, uploadProfileImage.single('profileImage'), updateProfile)
+router.put("/users/updateprofile", authMiddleware, uploadSingleImage('image'), updateProfile)
 
 //post
 // router.post("/post", authMiddleware, uploadProductImages.array('image',10),createPost );
