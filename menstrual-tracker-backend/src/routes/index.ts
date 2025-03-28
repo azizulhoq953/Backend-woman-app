@@ -4,7 +4,7 @@ import { authMiddleware, adminMiddleware, authenticateAdmin } from "../middlewar
 import { register, login, getProfile, updateProfile} from "../controllers/authController";
 import {getFollowing, getFollowers, followUser} from "../controllers/follower.controllers";
 import { getUsers, getCommunityPosts, getOrders, createCategory,  createAdmin, loginAdmin, addProductHandler, getAllProducts, getProductById, getAllCategories, getCategoryById, getAdmin, changeAdminPassword, removeCategory, deleteProduct, getAllOrders, deleteOrder  } from "../controllers/adminController";
-import { addComment, createPost, followPost, getAllPosts, getComments, getPostFollowers, getPostsByCategory, getSavedPosts, savePost, searchPostsByCategory, toggleLikePost } from "../controllers/post.controller";
+import { addComment, createPost, deletePost, followPost, getAllPosts, getComments, getPostFollowers, getPostsByCategory, getSavedPosts, getUserPosts, savePost, searchPostsByCategory, toggleLikePost, updatePost } from "../controllers/post.controller";
 import { addToCart, getCart } from "../controllers/addtocart";
 import { placeOrder } from "../controllers/order.controller";
 import bcrypt from "bcrypt";
@@ -39,6 +39,9 @@ router.post("/login", login);
 
 // User Routes
 router.get("/users/getProfile", authMiddleware,getProfile);
+router.get("/users/getPosts", authMiddleware,getUserPosts);
+router.put("/users/Posts/:id", authMiddleware, uploadMultipleImages(),updatePost);
+router.delete("/users/Posts/:postId", authMiddleware, deletePost);
 router.post("/orders", authMiddleware, addToCart);
 router.get("/users/order",authMiddleware,getCart)
 router.get("/admin/all-orders",getAllOrders)

@@ -68,9 +68,9 @@ import { ICategory } from "./category.model";
 interface IPost extends Document {
   userId: mongoose.Schema.Types.ObjectId;
   title: string;
-  category: ICategory; // Category should now be typed as ICategory
+  category: ICategory; 
   description: string;
-  image?: string;
+  images?: any;
   likes: Types.ObjectId[];
   comments: { userId: Types.ObjectId; commentText: string }[];
   followers: Types.ObjectId[];
@@ -84,7 +84,8 @@ const PostSchema = new Schema<IPost>(
     title: { type: String, required: true },
     category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
     description: { type: String, required: true },
-    image: { type: String },
+    images: [{ type: String }],
+
     likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
     comments: [
       {

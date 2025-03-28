@@ -184,6 +184,191 @@ export const createPost = async (req: AuthenticatedRequest, res: Response): Prom
     }
   };
   
+  export const updatePost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { title, category, description } = req.body;
+      const postId = req.params.id;
+  
+      // Check if the postId is valid
+      if (!Types.ObjectId.isValid(postId)) {
+        res.status(400).json({ error: "Invalid post ID" });
+        return;
+      }
+  
+      // Check if the post exists
+      const post = await Post.findById(postId);
+      if (!post) {
+        res.status(404).json({ error: "Post not found" });
+        return;
+      }
+  
+      // Check if the user is the post owner
+      if (!req.user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+  
+      // Handle file uploads
+      let imagePaths: string[] = [];
+      if (req.files && Array.isArray(req.files)) {
+        imagePaths = (req.files as Express.Multer.File[]).map(file => {
+          return file.path.replace(/\\/g, '/').replace(/^.*uploads\//, 'uploads/');
+        });
+      }
+  
+      // Handle category check and population
+      let categoryExists: ICategory | null = null;
+  
+      if (Types.ObjectId.isValid(category)) {
+        categoryExists = await Category.findById(category) as ICategory | null;
+      }
+  
+      if (!categoryExists) {
+        categoryExists = await Category.findOne({ name: category }) as ICategory | null;
+      }
+  
+      if (!categoryExists) {
+        res.status(400).json({ error: "Category not found" });
+        return;
+      }
+  
+      // Update the post
+      post.title = title ?? post.title;
+      post.description = description ?? post.description;
+      post.images = imagePaths.length > 0 ? imagePaths : post.images;
+  
+      // Save the updated post
+      await post.save();
+  
+      // Populate the post with category data
+      const populatedPost = await Post.findById(post._id).populate("category");
+  
+      if (!populatedPost) {
+        res.status(500).json({ error: "Failed to populate post" });
+        return;
+      }
+  
+      // Safely check if category exists before trying to access name
+      const categoryName = populatedPost.category ? populatedPost.category.name : "No Category";
+  
+      // Construct the full image URLs
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const imageUrls = populatedPost.images.map((imagePath: any) => `${baseUrl}/${imagePath}`);
+  
+      // Send the response
+      res.status(200).json({
+        message: "Post updated successfully",
+        post: {
+          ...populatedPost.toObject(),
+          categoryName, // Using the safe category name
+          imageUrls,
+        },
+      });
+  
+    } catch (error) {
+      console.error("Error updating post:", error);
+      res.status(500).json({
+        error: "Server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : null,
+      });
+    }
+  };
+  
+
+  export const getUserPosts = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      // Check if the user is authenticated
+      if (!req.user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+  
+      // Get posts by the authenticated user
+      const posts = await Post.find({ userId: req.user.id });
+  
+      // If no posts found, send a response indicating this
+      if (posts.length === 0) {
+        res.status(404).json({ message: "No posts found" });
+        return;
+      }
+  
+      // Populate the category of each post (optional, if needed)
+      const populatedPosts = await Post.find({ userId: req.user.id }).populate("category");
+  
+      // Send the list of posts with populated categories
+      res.status(200).json({
+        message: "User's posts retrieved successfully",
+        posts: populatedPosts,
+      });
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      res.status(500).json({
+        error: "Server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+  
+  export const deletePost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { postId } = req.params;
+  
+      // Validate input
+      if (!postId) {
+        res.status(400).json({ error: "Post ID is required" });
+        return;
+      }
+  
+      // Ensure user is authenticated
+      if (!req.user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+  
+      // Find the post to delete
+      const postToDelete = await Post.findById(postId);
+  
+      if (!postToDelete) {
+        res.status(404).json({ error: "Post not found" });
+        return;
+      }
+  
+      // Check if the current user owns the post
+      if (postToDelete.userId.toString() !== req.user.id) {
+        res.status(403).json({ error: "You are not authorized to delete this post" });
+        return;
+      }
+  
+      // Delete associated image file
+      if (postToDelete.images) {
+        try {
+          // Construct full path to the image
+          const fullImagePath = path.join(process.cwd(), postToDelete.images);
+          await (fullImagePath);
+        } catch (fileError) {
+          console.warn(`Could not delete image: ${postToDelete.images}`, fileError);
+        }
+      }
+  
+      // Delete the post from the database
+      await Post.findByIdAndDelete(postId);
+  
+      // Send success response
+      res.status(200).json({
+        message: "Post deleted successfully",
+        postId: postId
+      });
+  
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      res.status(500).json({ 
+        error: "Server error", 
+        details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : null
+      });
+    }
+  };
 
 export const toggleLikePost = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -373,7 +558,7 @@ export const searchPostsByCategory = async (req: Request, res: Response): Promis
           posts: posts.map(post => ({
             ...post.toObject(),
             categoryName: (post.category as any).name,
-            imageUrl: post.image ? `${req.protocol}://${req.get('host')}/${post.image}` : ''
+            imageUrl: post.images ? `${req.protocol}://${req.get('host')}/${post.images}` : ''
           })),
         });
       } else {
