@@ -86,72 +86,25 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
 
 
 
-// export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
-//   try {
-//     const { name, category, description, price } = req.body;
-//     const images = req.files as Express.Multer.File[];
-
-//     if (!name || !category || !description || !price || !images || images.length === 0) {
-//        res.status(400).json({ error: "All fields are required" });
-//        return
-//     }
-
-//     const parsedPrice = parseFloat(price);
-//     if (isNaN(parsedPrice)) {
-//        res.status(400).json({ error: "Price must be a valid number" });
-//        return
-//     }
-
-//     const baseUrl = `${req.protocol}://${req.get('host')}`;
-//     const imageUrls = images.map(image => `${baseUrl}/uploads/PostImage/${image.filename}`);
-
-//     const product = new Product({
-//       name,
-//       category,
-//       description,
-//       price: parsedPrice,
-//       images: imageUrls,
-//     });
-
-//     await product.save();
-
-//     res.status(201).json({ message: "Product added successfully", product });
-//   } catch (error) {
-//     console.error("Error adding product:", error);
-//     res.status(500).json({ error: "Server error while adding product", details: error });
-//   }
-// };
-
 export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, category, description, price } = req.body;
     const images = req.files as Express.Multer.File[];
 
-    // Validation checks
-    if (!name || !category || !description || !price) {
-      res.status(400).json({ error: "All fields are required" });
-      return;
+    if (!name || !category || !description || !price || !images || images.length === 0) {
+       res.status(400).json({ error: "All fields are required" });
+       return
     }
 
-    if (!images || images.length === 0) {
-      res.status(400).json({ error: "At least one image is required" });
-      return;
-    }
-
-    // Price validation
     const parsedPrice = parseFloat(price);
-    if (isNaN(parsedPrice) || parsedPrice < 0) {
-      res.status(400).json({ error: "Price must be a valid positive number" });
-      return;
+    if (isNaN(parsedPrice)) {
+       res.status(400).json({ error: "Price must be a valid number" });
+       return
     }
 
-    // Generate image URLs
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const imageUrls = images.map(image => 
-      `${baseUrl}/uploads/${image.filename}`.replace(/\\/g, '/')
-    );
+    const imageUrls = images.map(image => `${baseUrl}/uploads/PostImage/${image.filename}`);
 
-    // Create and save product
     const product = new Product({
       name,
       category,
@@ -162,19 +115,66 @@ export const addProductHandler = async (req: Request, res: Response): Promise<vo
 
     await product.save();
 
-    // Respond with success
-    res.status(201).json({ 
-      message: "Product added successfully", 
-      product 
-    });
+    res.status(201).json({ message: "Product added successfully", product });
   } catch (error) {
     console.error("Error adding product:", error);
-    res.status(500).json({ 
-      error: "Server error while adding product", 
-      details: error instanceof Error ? error.message : String(error)
-    });
+    res.status(500).json({ error: "Server error while adding product", details: error });
   }
 };
+
+// export const addProductHandler = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { name, category, description, price } = req.body;
+//     const images = req.files as Express.Multer.File[];
+
+//     // Validation checks
+//     if (!name || !category || !description || !price) {
+//       res.status(400).json({ error: "All fields are required" });
+//       return;
+//     }
+
+//     if (!images || images.length === 0) {
+//       res.status(400).json({ error: "At least one image is required" });
+//       return;
+//     }
+
+//     // Price validation
+//     const parsedPrice = parseFloat(price);
+//     if (isNaN(parsedPrice) || parsedPrice < 0) {
+//       res.status(400).json({ error: "Price must be a valid positive number" });
+//       return;
+//     }
+
+//     // Generate image URLs
+//     const baseUrl = `${req.protocol}://${req.get('host')}`;
+//     const imageUrls = images.map(image => 
+//       `${baseUrl}/uploads/${image.filename}`.replace(/\\/g, '/')
+//     );
+
+//     // Create and save product
+//     const product = new Product({
+//       name,
+//       category,
+//       description,
+//       price: parsedPrice,
+//       images: imageUrls,
+//     });
+
+//     await product.save();
+
+//     // Respond with success
+//     res.status(201).json({ 
+//       message: "Product added successfully", 
+//       product 
+//     });
+//   } catch (error) {
+//     console.error("Error adding product:", error);
+//     res.status(500).json({ 
+//       error: "Server error while adding product", 
+//       details: error instanceof Error ? error.message : String(error)
+//     });
+//   }
+// };
 
 
 export const deleteProduct = async (req: Request, res: Response): Promise<void> => {
